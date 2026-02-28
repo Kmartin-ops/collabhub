@@ -67,4 +67,8 @@ public class TaskService {
     public Optional<Task> getNextUrgentTask() {
         return registry.getNextUrgent();
     }
+    // Add at the bottom of TaskService.java
+    public TaskRegistry getRegistry() {
+        return registry;
+    }
 }
