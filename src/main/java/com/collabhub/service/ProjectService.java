@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Service  // ← tells Spring: manage this as a bean
+@Service
 public class ProjectService {
 
     private final ProjectRegistry registry = new ProjectRegistry();
@@ -19,7 +19,7 @@ public class ProjectService {
         Project project = new Project(name, description);
         project.addMember(createdBy);
         registry.save(project);
-        System.out.println("[ProjectService] Created: '" + project.getName()
+        System.out.println("[ProjectService] Created: '" + name
                 + "' by " + createdBy.getName());
         return project;
     }
@@ -43,5 +43,18 @@ public class ProjectService {
 
     public List<Project> getActiveProjects() {
         return registry.findActive();
+    }
+
+    public Project updateProject(Project project, String name,
+                                 String description, String status) {
+        if (name        != null) project.setName(name);
+        if (description != null) project.setDescription(description);
+        if (status      != null) project.setStatus(status);
+        registry.save(project);
+        return project;
+    }
+
+    public void deleteProject(UUID id) {
+        registry.delete(id);
     }
 }

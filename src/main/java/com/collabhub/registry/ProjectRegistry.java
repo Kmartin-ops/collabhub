@@ -44,4 +44,8 @@ public class ProjectRegistry {
     public int count() {
         return store.size();
     }
+
+    public void delete(UUID id) {
+        store.remove(id);
+    }
 }
