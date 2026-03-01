@@ -1,33 +1,32 @@
 package com.collabhub.dto;
 
-import com.collabhub.domain.Project;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+@Schema(description = "Project data returned by the API")
 public record ProjectResponse(
-        UUID id,
-        String name,
-        String description,
-        String status,
-        List<String> memberNames,
-        int memberCount,
-        LocalDateTime createdAt
-) {
-    public static ProjectResponse from(Project project) {
-        List<String> members = project.getMembers().stream()
-                .map(u -> u.getName())
-                .sorted()
-                .toList();
 
-        return new ProjectResponse(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                project.getStatus(),
-                members,
-                members.size(),
-                project.getCreatedAt()
-        );
-    }
-}
+        @Schema(description = "Unique identifier")
+        UUID id,
+
+        @Schema(description = "Project name", example = "CollabHub MVP")
+        String name,
+
+        @Schema(description = "Project description")
+        String description,
+
+        @Schema(description = "Status", example = "ACTIVE",
+                allowableValues = {"ACTIVE", "COMPLETED", "ARCHIVED"})
+        String status,
+
+        @Schema(description = "Names of all project members")
+        List<String> memberNames,
+
+        @Schema(description = "Total number of members")
+        int memberCount,
+
+        @Schema(description = "Creation timestamp")
+        LocalDateTime createdAt
+) {}

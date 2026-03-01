@@ -129,4 +129,12 @@ public class TaskService {
             handler.handle(task, actor);
         }
     }
+
+    @Transactional
+    public void deleteTask(UUID id) {
+        log.debug("Deleting task id={}", id);
+        Task task = getById(id);
+        taskRepository.delete(task);
+        log.info("Task deleted: id={}", id);
+    }
 }
