@@ -2,10 +2,45 @@ spring:
   application:
     name: collabhub
 
+  # Database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/collabhub
+    username: collabhub
+    password: collabhub
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: CollabHubPool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+
+  # JPA / Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: validate        # never auto-create — Flyway owns the schema
+    show-sql: false             # set to true in dev for debugging
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+
+  # Flyway
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  # Jackson
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: false
+
 server:
   port: 8080
 
-# CollabHub custom properties
 collabhub:
   app-description: "Collaborative project management platform"
   notifications:
@@ -15,14 +50,14 @@ collabhub:
     default-page-size: 20
     max-page-size: 100
 
-# Logging defaults — overridden per profile
 logging:
   level:
     root: INFO
-    com.collabhub: INFO
+    com.collabhub: DEBUG
+    org.flywaydb: INFO
   pattern:
     console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
-# Springdoc OpenAPI
+
 springdoc:
   api-docs:
     enabled: true

@@ -1,27 +1,26 @@
 package com.collabhub.domain;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@MappedSuperclass  // not an entity itself — shares mappings with subclasses
 public abstract class BaseEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(updatable = false, nullable = false)
     private UUID id;
+
+    @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
-    // Constructor — every entity gets an ID and timestamp the moment it's created
     public BaseEntity() {
-        this.id = UUID.randomUUID();
         this.createdAt = LocalDateTime.now();
     }
 
-    // Getters only — id and createdAt should never change after creation
-    public UUID getId() {
-        return id;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
+    public UUID getId() { return id; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
 
     @Override
     public String toString() {

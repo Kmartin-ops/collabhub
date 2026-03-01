@@ -55,7 +55,7 @@ public class StartupRunner implements ApplicationRunner {
         log.info("Active profiles: {}",
                 profiles.length > 0 ? Arrays.toString(profiles) : "[default]");
 
-        // Print loaded properties
+        /*// Print loaded properties
         log.info("Loaded config: {}", properties);
 
         // Beans
@@ -98,7 +98,7 @@ public class StartupRunner implements ApplicationRunner {
         report.printFullReport();
 
         dispatcher.shutdown();
-
+*/
         log.info("CollabHub ready on port {}",
                 environment.getProperty("server.port", "8080"));
     }
