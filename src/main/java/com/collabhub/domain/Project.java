@@ -1,9 +1,8 @@
 package com.collabhub.domain;
 
 import jakarta.persistence.*;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+
+import java.util.*;
 
 @Entity
 @Table(name = "projects")
@@ -27,6 +26,17 @@ public class Project extends BaseEntity {
             inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     private Set<User> members = new HashSet<>();
+
+    @OneToMany(
+            mappedBy      = "project",
+            fetch         = FetchType.LAZY,
+            cascade       = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<Task> tasks = new ArrayList<>();
+    public List<Task> getTasks() { return tasks; }
+
+
 
     protected Project() {}
 

@@ -2,9 +2,8 @@ package com.collabhub;
 
 import com.collabhub.async.NotificationDispatcher;
 import com.collabhub.config.CollabHubProperties;
+import com.collabhub.domain.*;
 import com.collabhub.notification.ConsoleNotification;
-import com.collabhub.report.ReportEngine;
-import com.collabhub.seed.DataSeeder;
 import com.collabhub.service.ProjectService;
 import com.collabhub.service.TaskService;
 import com.collabhub.service.UserService;
@@ -16,6 +15,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
 import java.util.Arrays;
 
 @Component
@@ -23,13 +23,13 @@ public class StartupRunner implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(StartupRunner.class);
 
-    private final ProjectService       projectService;
-    private final TaskService          taskService;
-    private final UserService          userService;
-    private final ConsoleNotification  notifier;
-    private final ApplicationContext   context;
-    private final CollabHubProperties  properties;
-    private final Environment          environment;
+    private final ProjectService      projectService;
+    private final TaskService         taskService;
+    private final UserService         userService;
+    private final ConsoleNotification notifier;
+    private final ApplicationContext  context;
+    private final CollabHubProperties properties;
+    private final Environment         environment;
 
     public StartupRunner(ProjectService projectService,
                          TaskService taskService,
@@ -49,39 +49,23 @@ public class StartupRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-
-        // Active profiles
         String[] profiles = environment.getActiveProfiles();
         log.info("Active profiles: {}",
                 profiles.length > 0 ? Arrays.toString(profiles) : "[default]");
 
-        /*// Print loaded properties
-        log.info("Loaded config: {}", properties);
+        // Only seed if database is empty
+        if (userService.findAll().isEmpty()) {
+            log.info("Empty database detected — seeding...");
+            seed();
+        } else {
+            log.info("Database already has data — skipping seed.");
+        }
 
-        // Beans
-        log.debug("CollabHub beans:");
-        Arrays.stream(context.getBeanDefinitionNames())
-                .filter(name -> name.contains("Service")
-                        || name.contains("Controller")
-                        || name.contains("Runner"))
-                .sorted()
-                .forEach(name -> log.debug("  ✓ {}", name));
+        log.info("CollabHub ready on port {}",
+                environment.getProperty("server.port", "8080"));
+    }
 
-        // Seed users
-        log.info("Seeding users...");
-        userService.createUser("Alice", "alice@collabhub.com", "MANAGER");
-        userService.createUser("Bob",   "bob@collabhub.com",   "DEVELOPER");
-        userService.createUser("Carol", "carol@collabhub.com", "DEVELOPER");
-        userService.createUser("Dave",  "dave@collabhub.com",  "DEVELOPER");
-        userService.createUser("Eve",   "eve@collabhub.com",   "DEVELOPER");
-        userService.createUser("Frank", "frank@collabhub.com", "MANAGER");
-        userService.createUser("Grace", "grace@collabhub.com", "DEVELOPER");
-        userService.createUser("Henry", "henry@collabhub.com", "DEVELOPER");
-        userService.createUser("Iris",  "iris@collabhub.com",  "DEVELOPER");
-        userService.createUser("James", "james@collabhub.com", "ADMIN");
-
-        // Seed projects — values from properties, not hardcoded
-        log.info("Seeding projects and tasks...");
+    private void seed() throws InterruptedException {
         NotificationDispatcher dispatcher = new NotificationDispatcher(
                 notifier,
                 properties.getNotifications().getDispatcherThreads(),
@@ -89,17 +73,52 @@ public class StartupRunner implements ApplicationRunner {
         );
         taskService.setDispatcher(dispatcher);
 
-        DataSeeder seeder = new DataSeeder(projectService, taskService);
-        seeder.seed();
+        // Users
+        User alice = userService.createUser("Alice", "alice@collabhub.com", "MANAGER");
+        User bob   = userService.createUser("Bob",   "bob@collabhub.com",   "DEVELOPER");
+        User carol = userService.createUser("Carol", "carol@collabhub.com", "DEVELOPER");
+        User dave  = userService.createUser("Dave",  "dave@collabhub.com",  "DEVELOPER");
+        User frank = userService.createUser("Frank", "frank@collabhub.com", "MANAGER");
+        userService.createUser("Eve",   "eve@collabhub.com",   "DEVELOPER");
+        userService.createUser("Grace", "grace@collabhub.com", "DEVELOPER");
+        userService.createUser("Henry", "henry@collabhub.com", "DEVELOPER");
+        userService.createUser("Iris",  "iris@collabhub.com",  "DEVELOPER");
+        userService.createUser("James", "james@collabhub.com", "ADMIN");
 
-        Thread.sleep(1000);
+        // Projects
+        Project mvp = projectService.createProject(
+                "CollabHub MVP", "Core platform features", alice);
+        projectService.addMember(mvp, bob);
+        projectService.addMember(mvp, carol);
 
-        ReportEngine report = new ReportEngine(taskService.getRegistry());
-        report.printFullReport();
+        Project mobile = projectService.createProject(
+                "CollabHub Mobile", "iOS & Android app", frank);
+        projectService.addMember(mobile, dave);
 
+        // Tasks
+        Task t1 = taskService.createTask("Set up domain model", "HIGH",
+                LocalDate.now().plusDays(2), mvp, alice);
+        Task t2 = taskService.createTask("Build REST API", "HIGH",
+                LocalDate.now().plusDays(5), mvp, alice);
+        Task t3 = taskService.createTask("Write unit tests", "MEDIUM",
+                LocalDate.now().plusDays(7), mvp, alice);
+        Task t4 = taskService.createTask("Fix login bug", "HIGH",
+                LocalDate.now().minusDays(1), mvp, alice);
+
+        taskService.assignTask(t1, bob,   alice);
+        taskService.assignTask(t2, carol, alice);
+        taskService.assignTask(t3, bob,   alice);
+        taskService.assignTask(t4, carol, alice);
+
+        taskService.changeStatus(t1, "IN_PROGRESS", bob);
+        taskService.changeStatus(t4, "IN_PROGRESS", carol);
+
+        Thread.sleep(500);
         dispatcher.shutdown();
-*/
-        log.info("CollabHub ready on port {}",
-                environment.getProperty("server.port", "8080"));
+
+        log.info("Seed complete — users={}, projects={}, tasks={}",
+                userService.findAll().size(),
+                projectService.getAllProjects().size(),
+                taskService.findAll().size());
     }
 }
