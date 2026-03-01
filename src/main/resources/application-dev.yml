@@ -1,0 +1,18 @@
+# Dev profile — verbose logging, relaxed settings
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    com.collabhub: DEBUG
+    org.springframework.web: DEBUG
+
+collabhub:
+  notifications:
+    dispatcher-threads: 2
+    queue-capacity: 50
+
+# Print active profile banner
+spring.banner.location: classpath:banner-dev.txt

@@ -1,15 +1,19 @@
 package com.collabhub;
 
 import com.collabhub.async.NotificationDispatcher;
+import com.collabhub.config.CollabHubProperties;
 import com.collabhub.notification.ConsoleNotification;
 import com.collabhub.report.ReportEngine;
 import com.collabhub.seed.DataSeeder;
 import com.collabhub.service.ProjectService;
 import com.collabhub.service.TaskService;
 import com.collabhub.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -17,38 +21,54 @@ import java.util.Arrays;
 @Component
 public class StartupRunner implements ApplicationRunner {
 
-    private final ProjectService projectService;
-    private final TaskService    taskService;
-    private final UserService    userService;
-    private final ConsoleNotification notifier;
-    private final ApplicationContext  context;
+    private static final Logger log = LoggerFactory.getLogger(StartupRunner.class);
+
+    private final ProjectService       projectService;
+    private final TaskService          taskService;
+    private final UserService          userService;
+    private final ConsoleNotification  notifier;
+    private final ApplicationContext   context;
+    private final CollabHubProperties  properties;
+    private final Environment          environment;
 
     public StartupRunner(ProjectService projectService,
                          TaskService taskService,
                          UserService userService,
                          ConsoleNotification notifier,
-                         ApplicationContext context) {
+                         ApplicationContext context,
+                         CollabHubProperties properties,
+                         Environment environment) {
         this.projectService = projectService;
         this.taskService    = taskService;
         this.userService    = userService;
         this.notifier       = notifier;
         this.context        = context;
+        this.properties     = properties;
+        this.environment    = environment;
     }
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
 
-        // Print beans
-        System.out.println("\n[CollabHub] Beans registered by Spring:");
+        // Active profiles
+        String[] profiles = environment.getActiveProfiles();
+        log.info("Active profiles: {}",
+                profiles.length > 0 ? Arrays.toString(profiles) : "[default]");
+
+        // Print loaded properties
+        log.info("Loaded config: {}", properties);
+
+        // Beans
+        log.debug("CollabHub beans:");
         Arrays.stream(context.getBeanDefinitionNames())
                 .filter(name -> name.contains("Service")
                         || name.contains("Controller")
                         || name.contains("Runner"))
                 .sorted()
-                .forEach(name -> System.out.println("   ✓ " + name));
+                .forEach(name -> log.debug("  ✓ {}", name));
 
-        // Seed users into UserService so API can look them up
-        System.out.println("\n[CollabHub] Seeding users...");
+        // Seed users
+        log.info("Seeding users...");
         userService.createUser("Alice", "alice@collabhub.com", "MANAGER");
         userService.createUser("Bob",   "bob@collabhub.com",   "DEVELOPER");
         userService.createUser("Carol", "carol@collabhub.com", "DEVELOPER");
@@ -60,10 +80,13 @@ public class StartupRunner implements ApplicationRunner {
         userService.createUser("Iris",  "iris@collabhub.com",  "DEVELOPER");
         userService.createUser("James", "james@collabhub.com", "ADMIN");
 
-        // Seed projects and tasks
-        System.out.println("\n[CollabHub] Seeding projects and tasks...");
-        NotificationDispatcher dispatcher =
-                new NotificationDispatcher(notifier, 3, 200);
+        // Seed projects — values from properties, not hardcoded
+        log.info("Seeding projects and tasks...");
+        NotificationDispatcher dispatcher = new NotificationDispatcher(
+                notifier,
+                properties.getNotifications().getDispatcherThreads(),
+                properties.getNotifications().getQueueCapacity()
+        );
         taskService.setDispatcher(dispatcher);
 
         DataSeeder seeder = new DataSeeder(projectService, taskService);
@@ -76,6 +99,7 @@ public class StartupRunner implements ApplicationRunner {
 
         dispatcher.shutdown();
 
-        System.out.println("\n[CollabHub] Ready on http://localhost:8080");
+        log.info("CollabHub ready on port {}",
+                environment.getProperty("server.port", "8080"));
     }
 }

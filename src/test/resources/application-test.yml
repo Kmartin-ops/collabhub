@@ -1,0 +1,14 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+logging:
+  level:
+    com.collabhub: WARN  # keep test output clean
+    root: WARN
+
+collabhub:
+  notifications:
+    dispatcher-threads: 1
+    queue-capacity: 10

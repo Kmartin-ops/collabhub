@@ -5,7 +5,20 @@ spring:
 server:
   port: 8080
 
+# CollabHub custom properties
+collabhub:
+  app-description: "Collaborative project management platform"
+  notifications:
+    dispatcher-threads: 3
+    queue-capacity: 200
+  pagination:
+    default-page-size: 20
+    max-page-size: 100
+
+# Logging defaults — overridden per profile
 logging:
   level:
-    com.collabhub: DEBUG
-    org.springframework: INFO
+    root: INFO
+    com.collabhub: INFO
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
