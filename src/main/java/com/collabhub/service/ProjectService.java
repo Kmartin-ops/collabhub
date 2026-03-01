@@ -2,12 +2,12 @@ package com.collabhub.service;
 
 import com.collabhub.domain.Project;
 import com.collabhub.domain.User;
+import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.registry.ProjectRegistry;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -24,17 +24,14 @@ public class ProjectService {
         return project;
     }
 
+    public Project getById(UUID id) {
+        return registry.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Project", id));
+    }
+
     public void addMember(Project project, User user) {
         project.addMember(user);
         registry.save(project);
-    }
-
-    public Optional<Project> findById(UUID id) {
-        return registry.findById(id);
-    }
-
-    public List<Project> findByMember(User user) {
-        return registry.findByMember(user);
     }
 
     public Collection<Project> getAllProjects() {
@@ -43,6 +40,10 @@ public class ProjectService {
 
     public List<Project> getActiveProjects() {
         return registry.findActive();
+    }
+
+    public List<Project> findByMember(User user) {
+        return registry.findByMember(user);
     }
 
     public Project updateProject(Project project, String name,
@@ -55,6 +56,7 @@ public class ProjectService {
     }
 
     public void deleteProject(UUID id) {
+        getById(id); // throws 404 if not found
         registry.delete(id);
     }
 }

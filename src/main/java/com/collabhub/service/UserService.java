@@ -1,11 +1,12 @@
 package com.collabhub.service;
 
 import com.collabhub.domain.User;
+import com.collabhub.exception.DuplicateResourceException;
+import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.registry.UserRegistry;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.Optional;
 
 @Service
 public class UserService {
@@ -14,17 +15,17 @@ public class UserService {
 
     public User createUser(String name, String email, String role) {
         if (registry.exists(email)) {
-            throw new IllegalArgumentException(
-                    "User with email '" + email + "' already exists");
+            throw new DuplicateResourceException("User", email);
         }
         User user = new User(name, email, role);
         registry.save(user);
-        System.out.println("[UserService] Created user: " + name + " (" + email + ")");
+        System.out.println("[UserService] Created: " + name + " (" + email + ")");
         return user;
     }
 
-    public Optional<User> findByEmail(String email) {
-        return registry.findByEmail(email);
+    public User getByEmail(String email) {
+        return registry.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User", email));
     }
 
     public Collection<User> findAll() {
