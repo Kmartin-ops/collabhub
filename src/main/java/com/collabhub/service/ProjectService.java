@@ -3,12 +3,14 @@ package com.collabhub.service;
 import com.collabhub.domain.Project;
 import com.collabhub.domain.User;
 import com.collabhub.registry.ProjectRegistry;
+import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service  // ← tells Spring: manage this as a bean
 public class ProjectService {
 
     private final ProjectRegistry registry = new ProjectRegistry();
@@ -23,8 +25,8 @@ public class ProjectService {
     }
 
     public void addMember(Project project, User user) {
-        project.addMember(user); // Set handles duplicate rejection
-        registry.save(project);  // re-save updated project
+        project.addMember(user);
+        registry.save(project);
     }
 
     public Optional<Project> findById(UUID id) {

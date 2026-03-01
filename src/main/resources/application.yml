@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: collabhub
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.collabhub: DEBUG
+    org.springframework: INFO

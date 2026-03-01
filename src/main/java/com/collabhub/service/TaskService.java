@@ -7,23 +7,25 @@ import com.collabhub.domain.Task;
 import com.collabhub.domain.User;
 import com.collabhub.notification.*;
 import com.collabhub.registry.TaskRegistry;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Service
 public class TaskService {
 
     private final TaskRegistry registry = new TaskRegistry();
     private final Notifiable notifier;
-    private NotificationDispatcher dispatcher; // optional async dispatcher
+    private NotificationDispatcher dispatcher;
 
+    // Spring sees one constructor — auto-injects Notifiable
     public TaskService(Notifiable notifier) {
         this.notifier = notifier;
     }
 
-    // Attach dispatcher after construction
     public void setDispatcher(NotificationDispatcher dispatcher) {
         this.dispatcher = dispatcher;
     }
@@ -32,7 +34,6 @@ public class TaskService {
                            Project project, User createdBy) {
         Task task = new Task(title, priority, dueDate, project);
         registry.save(task);
-
         dispatchOrNotify(
                 NotificationEvent.of(createdBy.getName(),
                         "Task '" + task.getTitle() + "' created in " + project.getName(),
@@ -45,7 +46,6 @@ public class TaskService {
     public void assignTask(Task task, User assignee, User assignedBy) {
         task.setAssignee(assignee);
         registry.save(task);
-
         dispatchOrNotify(
                 NotificationEvent.of(assignee.getName(),
                         "You were assigned: '" + task.getTitle() + "'",
@@ -59,7 +59,6 @@ public class TaskService {
         task.setStatus(newStatus);
         System.out.println("[TaskService] " + task.getTitle()
                 + ": " + oldStatus + " → " + newStatus);
-
         if ("DONE".equals(newStatus)) {
             dispatchOrNotify(
                     NotificationEvent.of(changedBy.getName(),
@@ -70,7 +69,6 @@ public class TaskService {
         }
     }
 
-    // If dispatcher is set, go async. Otherwise fall back to sync.
     private void dispatchOrNotify(NotificationEvent event, Task task,
                                   User actor, StatusChangeHandler handler) {
         if (dispatcher != null) {
