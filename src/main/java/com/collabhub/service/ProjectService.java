@@ -6,6 +6,8 @@ import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.repository.ProjectRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(value = "projects", allEntries = true)
     public Project createProject(String name, String description, User createdBy) {
         log.debug("Creating project '{}' for user '{}'", name, createdBy.getEmail());
         Project project = new Project(name, description);
@@ -45,6 +48,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(value = "projects", allEntries = true)
     public void addMember(Project project, User user) {
         log.debug("Adding member '{}' to project '{}'",
                 user.getEmail(), project.getName());
@@ -55,6 +59,7 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable("projects")
     public List<Project> getAllProjects() {
         log.debug("Fetching all projects");
         return projectRepository.findAll();
@@ -72,6 +77,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(value = "projects", allEntries = true)
     public Project updateProject(Project project, String name,
                                  String description, String status) {
         log.debug("Updating project id={}", project.getId());
@@ -85,6 +91,7 @@ public class ProjectService {
     }
 
     @Transactional
+    @CacheEvict(value = "projects", allEntries = true)
     public void deleteProject(UUID id) {
         log.debug("Deleting project id={}", id);
         Project project = getById(id);

@@ -8,8 +8,11 @@ import com.collabhub.domain.User;
 import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.notification.*;
 import com.collabhub.repository.TaskRepository;
+import com.collabhub.repository.TaskSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -93,6 +96,17 @@ public class TaskService {
                     log.warn("Task not found: id={}", id);
                     return new ResourceNotFoundException("Task", id);
                 });
+    }
+    // ── Paginated + filtered search ───────────────────────────
+    @Transactional(readOnly = true)
+    public Page<Task> search(String status, String priority,
+                             UUID projectId, UUID assigneeId,
+                             String keyword, Pageable pageable) {
+        log.debug("Searching tasks: status={} priority={} projectId={} keyword={}",
+                status, priority, projectId, keyword);
+        var spec = TaskSpecification.withFilters(
+                status, priority, projectId, assigneeId, keyword);
+        return taskRepository.findAll(spec, pageable);
     }
 
     @Transactional(readOnly = true)

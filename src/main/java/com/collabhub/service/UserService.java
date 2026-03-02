@@ -6,6 +6,8 @@ import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.repository.UserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "users", allEntries = true) // clear cache on write
     public User createUser(String name, String email, String role) {
         log.debug("Creating user email={} role={}", email, role);
         if (userRepository.existsByEmail(email)) {
@@ -36,6 +39,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable("users")  // cache the full user list
     public User getByEmail(String email) {
         log.debug("Fetching user email={}", email);
         return userRepository.findByEmail(email)

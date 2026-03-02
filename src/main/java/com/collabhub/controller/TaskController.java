@@ -1,6 +1,7 @@
 package com.collabhub.controller;
 
 import com.collabhub.dto.CreateTaskRequest;
+import com.collabhub.dto.PagedResponse;
 import com.collabhub.dto.TaskResponse;
 import com.collabhub.dto.UpdateTaskRequest;
 import com.collabhub.mapper.TaskMapper;
@@ -8,10 +9,14 @@ import com.collabhub.service.ProjectService;
 import com.collabhub.service.TaskService;
 import com.collabhub.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,21 +44,46 @@ public class TaskController {
         this.taskMapper     = taskMapper;
     }
 
-    // GET /api/tasks?projectId=xxx
+    // GET /api/tasks?status=IN_PROGRESS&priority=HIGH&keyword=login&page=0&size=20
     @GetMapping
-    @Operation(summary = "Get tasks",
-            description = "Returns tasks for a project, or all tasks if no projectId given")
-    @ApiResponse(responseCode = "200", description = "Tasks returned")
-    public List<TaskResponse> getTasks(
-            @RequestParam(required = false) UUID projectId) {
+    @Operation(
+            summary = "Search tasks with filters and pagination",
+            description = "Filter by status, priority, projectId, assigneeId, or keyword. " +
+                    "Sort with sort=dueDate,asc. Page with page=0&size=20."
+    )
+    @ApiResponse(responseCode = "200", description = "Paginated task results")
+    public PagedResponse<TaskResponse> searchTasks(
 
-        var tasks = projectId != null
-                ? taskService.findByProject(projectId)
-                : taskService.findAll();
+            @Parameter(description = "Filter by status")
+            @RequestParam(required = false) String status,
 
-        return tasks.stream()
+            @Parameter(description = "Filter by priority")
+            @RequestParam(required = false) String priority,
+
+            @Parameter(description = "Filter by project ID")
+            @RequestParam(required = false) UUID projectId,
+
+            @Parameter(description = "Filter by assignee ID")
+            @RequestParam(required = false) UUID assigneeId,
+
+            @Parameter(description = "Search in title")
+            @RequestParam(required = false) String keyword,
+
+            // Default: page 0, 20 per page, sorted by dueDate ascending
+            @PageableDefault(size = 20, sort = "dueDate",
+                    direction = Sort.Direction.ASC)
+            Pageable pageable) {
+
+        var page = taskService.search(
+                status, priority, projectId, assigneeId, keyword, pageable);
+
+        var content = page.getContent().stream()
                 .map(taskMapper::toResponse)
                 .toList();
+
+        return PagedResponse.from(
+                new org.springframework.data.domain.PageImpl<>(
+                        content, pageable, page.getTotalElements()));
     }
 
     // GET /api/tasks/{id}
@@ -69,10 +99,23 @@ public class TaskController {
 
     // GET /api/tasks/overdue
     @GetMapping("/overdue")
-    @Operation(summary = "Get overdue tasks",
-            description = "Returns all tasks past their due date that are not DONE")
+    @Operation(summary = "Get all overdue tasks")
     public List<TaskResponse> getOverdue() {
         return taskService.findOverdue().stream()
+                .map(taskMapper::toResponse)
+                .toList();
+    }
+
+    // GET /api/tasks/board?projectId=xxx
+    @GetMapping("/board")
+    @Operation(
+            summary = "Get Kanban board for a project",
+            description = "Returns tasks sorted by priority then due date for board display"
+    )
+    public List<TaskResponse> getBoard(
+            @Parameter(description = "Project ID", required = true)
+            @RequestParam UUID projectId) {
+        return taskService.findKanbanBoard(projectId).stream()
                 .map(taskMapper::toResponse)
                 .toList();
     }
@@ -87,13 +130,11 @@ public class TaskController {
     })
     public ResponseEntity<TaskResponse> createTask(
             @Valid @RequestBody CreateTaskRequest request) {
-
         var project = projectService.getById(request.projectId());
         var creator = userService.getByEmail(request.creatorEmail());
         var task    = taskService.createTask(
                 request.title(), request.priority(),
                 request.dueDate(), project, creator);
-
         return ResponseEntity
                 .created(URI.create("/api/tasks/" + task.getId()))
                 .body(taskMapper.toResponse(task));
@@ -101,34 +142,24 @@ public class TaskController {
 
     // PUT /api/tasks/{id}
     @PutMapping("/{id}")
-    @Operation(summary = "Update a task",
-            description = "Updates title, status, priority, dueDate, or assignee. Null fields ignored.")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Task updated"),
-            @ApiResponse(responseCode = "404", description = "Task or assignee not found")
-    })
+    @Operation(summary = "Update a task")
     public TaskResponse updateTask(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateTaskRequest request) {
-
         var task = taskService.getById(id);
-
         if (request.title()    != null) task.setTitle(request.title());
         if (request.priority() != null) task.setPriority(request.priority());
         if (request.dueDate()  != null) task.setDueDate(request.dueDate());
-
         if (request.assigneeEmail() != null) {
             var assignee = userService.getByEmail(request.assigneeEmail());
             taskService.assignTask(task, assignee, assignee);
         }
-
         if (request.status() != null) {
             var actor = task.getAssignee() != null
                     ? task.getAssignee()
                     : userService.findAll().get(0);
             taskService.changeStatus(task, request.status(), actor);
         }
-
         return taskMapper.toResponse(taskService.getById(id));
     }
 
@@ -136,8 +167,8 @@ public class TaskController {
     @DeleteMapping("/{id}")
     @Operation(summary = "Delete a task")
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Task deleted"),
-            @ApiResponse(responseCode = "404", description = "Task not found")
+            @ApiResponse(responseCode = "204", description = "Deleted"),
+            @ApiResponse(responseCode = "404", description = "Not found")
     })
     public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
         taskService.deleteTask(id);
