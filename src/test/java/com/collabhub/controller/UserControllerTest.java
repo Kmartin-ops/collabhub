@@ -3,6 +3,7 @@ package com.collabhub.controller;
 import com.collabhub.domain.User;
 import com.collabhub.exception.DuplicateResourceException;
 import com.collabhub.exception.ResourceNotFoundException;
+import com.collabhub.mapper.UserMapperImpl;
 import com.collabhub.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
+@Import(UserMapperImpl.class)
 @DisplayName("UserController")
 class UserControllerTest {
 

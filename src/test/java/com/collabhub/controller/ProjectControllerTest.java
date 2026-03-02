@@ -3,6 +3,7 @@ package com.collabhub.controller;
 import com.collabhub.domain.Project;
 import com.collabhub.domain.User;
 import com.collabhub.exception.ResourceNotFoundException;
+import com.collabhub.mapper.ProjectMapperImpl;
 import com.collabhub.service.ProjectService;
 import com.collabhub.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProjectController.class)
+@Import(ProjectMapperImpl.class)
 @DisplayName("ProjectController")
 class ProjectControllerTest {
 
@@ -43,15 +46,23 @@ class ProjectControllerTest {
     private UserService userService;
 
     private User alice;
+    private User bob;
     private Project mvp;
 
     @BeforeEach
     void setUp() {
-        alice = new User("Alice", "alice@collabhub.com", "MANAGER");
-        mvp   = new Project("CollabHub MVP", "Core platform");
-        mvp.addMember(alice);
-    }
+        alice = new User("Alice", "alice@test.com", "MANAGER");
+        bob   = new User("Bob",   "bob@test.com",   "DEVELOPER");
 
+        mvp = new Project("CollabHub MVP", "Core platform");
+        // ← force a known ID so URLs are valid
+        mvp.setId(UUID.randomUUID());
+        mvp.addMember(alice);
+        mvp.addMember(bob);
+
+        when(projectService.getById(mvp.getId()))
+                .thenReturn(mvp);
+    }
     // ── GET /api/projects ─────────────────────────────────────
     @Nested
     @DisplayName("GET /api/projects")
@@ -67,7 +78,7 @@ class ProjectControllerTest {
                     .andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].name").value("CollabHub MVP"))
                     .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-                    .andExpect(jsonPath("$[0].memberCount").value(1));
+                    .andExpect(jsonPath("$[0].memberCount").value(2));
         }
 
         @Test

@@ -12,6 +12,11 @@ public abstract class BaseEntity {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
+    // Only needed for tests — allows controlled ID assignment
+    public void setId(UUID id) {
+        this.id = id;
+    }
+
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 

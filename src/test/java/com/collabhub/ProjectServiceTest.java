@@ -1,15 +1,30 @@
 package com.collabhub;
 
-import com.collabhub.domain.*;
+import com.collabhub.domain.Project;
+import com.collabhub.domain.User;
+import com.collabhub.repository.ProjectRepository;
 import com.collabhub.service.ProjectService;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
-import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("ProjectService")
 class ProjectServiceTest {
+
+    @Mock
+    private ProjectRepository projectRepository;
 
     private ProjectService projectService;
     private User alice;
@@ -17,7 +32,12 @@ class ProjectServiceTest {
 
     @BeforeEach
     void setUp() {
-        projectService = new ProjectService();
+        // save() returns whatever is passed to it
+        when(projectRepository.save(any(Project.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        projectService = new ProjectService(projectRepository);
+
         alice = new User("Alice", "alice@test.com", "MANAGER");
         bob   = new User("Bob",   "bob@test.com",   "DEVELOPER");
     }
@@ -41,21 +61,10 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should assign a unique ID")
-        void shouldAssignUniqueId() {
-            Project p1 = projectService.createProject("Project 1", "desc", alice);
-            Project p2 = projectService.createProject("Project 2", "desc", alice);
-            assertNotEquals(p1.getId(), p2.getId());
-        }
-
-        @Test
-        @DisplayName("should store project in registry")
-        void shouldStoreInRegistry() {
-            projectService.createProject("Project A", "desc", alice);
-            projectService.createProject("Project B", "desc", alice);
-
-            Collection<Project> all = projectService.getAllProjects();
-            assertEquals(2, all.size());
+        @DisplayName("should assign a createdAt timestamp")
+        void shouldAssignCreatedAt() {
+            Project project = projectService.createProject("Test", "desc", alice);
+            assertNotNull(project.getCreatedAt());
         }
     }
 
@@ -68,7 +77,6 @@ class ProjectServiceTest {
         void shouldAddMember() {
             Project project = projectService.createProject("Test", "desc", alice);
             projectService.addMember(project, bob);
-
             assertTrue(project.getMembers().contains(bob));
         }
 
@@ -78,8 +86,29 @@ class ProjectServiceTest {
             Project project = projectService.createProject("Test", "desc", alice);
             projectService.addMember(project, bob);
             projectService.addMember(project, bob); // duplicate
-
             assertEquals(2, project.getMembers().size()); // alice + bob only
+        }
+    }
+
+    @Nested
+    @DisplayName("getAllProjects()")
+    class GetAllProjects {
+
+        @Test
+        @DisplayName("should return all projects from repository")
+        void shouldReturnAllProjects() {
+            Project p1 = new Project("Project 1", "desc");
+            Project p2 = new Project("Project 2", "desc");
+            when(projectRepository.findAll()).thenReturn(List.of(p1, p2));
+
+            assertEquals(2, projectService.getAllProjects().size());
+        }
+
+        @Test
+        @DisplayName("should return empty list when no projects")
+        void shouldReturnEmptyList() {
+            when(projectRepository.findAll()).thenReturn(List.of());
+            assertTrue(projectService.getAllProjects().isEmpty());
         }
     }
 
@@ -90,10 +119,11 @@ class ProjectServiceTest {
         @Test
         @DisplayName("should return projects user belongs to")
         void shouldReturnMemberProjects() {
-            Project p1 = projectService.createProject("Project 1", "desc", alice);
-            Project p2 = projectService.createProject("Project 2", "desc", alice);
-            projectService.addMember(p1, bob);
-            // bob not added to p2
+            Project p1 = new Project("Project 1", "desc");
+            p1.addMember(alice);
+            p1.addMember(bob);
+
+            when(projectRepository.findByMember(bob)).thenReturn(List.of(p1));
 
             assertEquals(1, projectService.findByMember(bob).size());
         }
@@ -101,8 +131,25 @@ class ProjectServiceTest {
         @Test
         @DisplayName("should return empty list for user with no projects")
         void shouldReturnEmptyForNonMember() {
-            projectService.createProject("Project 1", "desc", alice);
+            when(projectRepository.findByMember(bob)).thenReturn(List.of());
             assertTrue(projectService.findByMember(bob).isEmpty());
+        }
+    }
+
+    @Nested
+    @DisplayName("deleteProject()")
+    class DeleteProject {
+
+        @Test
+        @DisplayName("should delete existing project")
+        void shouldDeleteProject() {
+            Project project = new Project("Test", "desc");
+            when(projectRepository.findByIdWithMembers(project.getId()))
+                    .thenReturn(Optional.of(project));
+
+            projectService.deleteProject(project.getId());
+
+            verify(projectRepository, times(1)).delete(project);
         }
     }
 }

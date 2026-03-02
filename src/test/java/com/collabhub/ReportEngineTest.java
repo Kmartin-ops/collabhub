@@ -1,54 +1,63 @@
 package com.collabhub;
 
 import com.collabhub.domain.*;
-import com.collabhub.notification.ConsoleNotification;
 import com.collabhub.report.PagedResult;
 import com.collabhub.report.ReportEngine;
 import com.collabhub.report.TaskSummary;
-import com.collabhub.service.TaskService;
+import com.collabhub.repository.TaskRepository;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 @DisplayName("ReportEngine")
 class ReportEngineTest {
 
-    private TaskService taskService;
+    @Mock
+    private TaskRepository taskRepository;
+
     private ReportEngine reportEngine;
     private Project project;
     private User alice;
     private User bob;
     private User carol;
 
+    private Task t1, t2, t3, t4, t5;
+
     @BeforeEach
     void setUp() {
-        taskService = new TaskService(new ConsoleNotification());
-        alice = new User("Alice", "alice@test.com", "MANAGER");
-        bob   = new User("Bob",   "bob@test.com",   "DEVELOPER");
-        carol = new User("Carol", "carol@test.com", "DEVELOPER");
+        alice   = new User("Alice", "alice@test.com", "MANAGER");
+        bob     = new User("Bob",   "bob@test.com",   "DEVELOPER");
+        carol   = new User("Carol", "carol@test.com", "DEVELOPER");
         project = new Project("Test", "desc");
 
-        // Seed a controlled set of tasks
-        Task t1 = taskService.createTask("Task 1", "HIGH",   LocalDate.now().plusDays(1),  project, alice);
-        Task t2 = taskService.createTask("Task 2", "MEDIUM", LocalDate.now().plusDays(3),  project, alice);
-        Task t3 = taskService.createTask("Task 3", "HIGH",   LocalDate.now().minusDays(1), project, alice);
-        Task t4 = taskService.createTask("Task 4", "LOW",    LocalDate.now().plusDays(5),  project, alice);
-        Task t5 = taskService.createTask("Task 5", "MEDIUM", LocalDate.now().plusDays(2),  project, alice);
+        t1 = new Task("Task 1", "HIGH",   LocalDate.now().plusDays(1),  project);
+        t2 = new Task("Task 2", "MEDIUM", LocalDate.now().plusDays(3),  project);
+        t3 = new Task("Task 3", "HIGH",   LocalDate.now().minusDays(1), project);
+        t4 = new Task("Task 4", "LOW",    LocalDate.now().plusDays(5),  project);
+        t5 = new Task("Task 5", "MEDIUM", LocalDate.now().plusDays(2),  project);
 
-        taskService.assignTask(t1, bob,   alice);
-        taskService.assignTask(t2, bob,   alice);
-        taskService.assignTask(t3, bob,   alice); // overdue, bob's
-        taskService.assignTask(t4, carol, alice);
-        taskService.assignTask(t5, carol, alice);
+        t1.setAssignee(bob);
+        t2.setAssignee(bob);
+        t3.setAssignee(bob);   // overdue, bob's
+        t4.setAssignee(carol);
+        t5.setAssignee(carol);
 
-        taskService.changeStatus(t2, "DONE", bob);
-        taskService.changeStatus(t5, "IN_PROGRESS", carol);
+        t2.setStatus("DONE");
+        t5.setStatus("IN_PROGRESS");
 
-        reportEngine = new ReportEngine(taskService.getRegistry());
+        // Tell the mock to return our controlled task list
+        when(taskRepository.findAll()).thenReturn(List.of(t1, t2, t3, t4, t5));
+
+        reportEngine = new ReportEngine(taskRepository);
     }
 
     @Test
@@ -76,9 +85,7 @@ class ReportEngineTest {
     void shouldPartitionOverdue() {
         Map<Boolean, List<Task>> partitioned = reportEngine.partitionByOverdue();
 
-        // t3 is overdue and not DONE
         assertEquals(1, partitioned.get(true).size());
-        // t1, t4 are on-track (t2 is DONE excluded, t5 IN_PROGRESS on-track)
         assertEquals(3, partitioned.get(false).size());
     }
 
@@ -88,7 +95,6 @@ class ReportEngineTest {
         List<Task> urgent = reportEngine.topUrgentTasks(2);
 
         assertEquals(2, urgent.size());
-        // First should be the earliest due date (t3 is overdue — most urgent)
         assertTrue(urgent.get(0).getDueDate()
                 .isBefore(urgent.get(1).getDueDate())
                 || urgent.get(0).getDueDate()
@@ -125,7 +131,7 @@ class ReportEngineTest {
         @DisplayName("should return remaining items on last page")
         void shouldReturnRemainingOnLastPage() {
             PagedResult<Task> page = reportEngine.getTasksPaged(1, 3);
-            assertEquals(2, page.getContent().size()); // 5 tasks, page 1 has 2
+            assertEquals(2, page.getContent().size());
         }
 
         @Test
