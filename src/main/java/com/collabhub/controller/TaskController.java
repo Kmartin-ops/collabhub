@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -122,12 +123,8 @@ public class TaskController {
 
     // POST /api/tasks
     @PostMapping
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Create a new task")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Task created"),
-            @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "404", description = "Project or creator not found")
-    })
     public ResponseEntity<TaskResponse> createTask(
             @Valid @RequestBody CreateTaskRequest request) {
         var project = projectService.getById(request.projectId());
@@ -142,6 +139,7 @@ public class TaskController {
 
     // PUT /api/tasks/{id}
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER') or (hasRole('DEVELOPER') and @taskAuthService.isAssignee(#id, authentication.name))")
     @Operation(summary = "Update a task")
     public TaskResponse updateTask(
             @PathVariable UUID id,
@@ -165,6 +163,7 @@ public class TaskController {
 
     // DELETE /api/tasks/{id}
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Delete a task")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Deleted"),

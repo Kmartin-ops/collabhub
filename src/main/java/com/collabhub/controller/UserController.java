@@ -1,5 +1,6 @@
 package com.collabhub.controller;
 
+import com.collabhub.domain.User;
 import com.collabhub.dto.CreateUserRequest;
 import com.collabhub.dto.UserResponse;
 import com.collabhub.mapper.UserMapper;
@@ -13,6 +14,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -29,6 +32,14 @@ public class UserController {
     public UserController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
         this.userMapper  = userMapper;
+    }
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current authenticated user")
+    public UserResponse getMe(
+            @AuthenticationPrincipal UserDetails userDetails){
+        User user = userService.getByEmail(userDetails.getUsername());
+        return userMapper.toResponse(user);
     }
 
     @GetMapping

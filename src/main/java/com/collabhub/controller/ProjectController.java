@@ -1,16 +1,18 @@
 package com.collabhub.controller;
 
-import com.collabhub.dto.*;
+import com.collabhub.dto.CreateProjectRequest;
+import com.collabhub.dto.ProjectResponse;
+import com.collabhub.dto.UpdateProjectRequest;
 import com.collabhub.mapper.ProjectMapper;
 import com.collabhub.service.ProjectService;
 import com.collabhub.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -36,36 +38,25 @@ public class ProjectController {
 
     @GetMapping
     @Operation(summary = "Get all projects")
-    public List<ProjectResponse> getAllProjects(
-            @Parameter(description = "Filter by status: ACTIVE, COMPLETED, ARCHIVED")
-            @RequestParam(required = false) String status) {
-
+    public List<ProjectResponse> getAllProjects() {
         return projectService.getAllProjects().stream()
-                .filter(p -> status == null
-                        || p.getStatus().equalsIgnoreCase(status))
                 .map(projectMapper::toResponse)
                 .toList();
     }
 
     @GetMapping("/{id}")
     @Operation(summary = "Get project by ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Project found"),
-            @ApiResponse(responseCode = "404", description = "Project not found")
-    })
     public ProjectResponse getById(@PathVariable UUID id) {
         return projectMapper.toResponse(projectService.getById(id));
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('MANAGER')")  // ← MANAGER only
     @Operation(summary = "Create a new project")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Project created"),
-            @ApiResponse(responseCode = "400", description = "Validation failed or creator not found")
-    })
     public ResponseEntity<ProjectResponse> createProject(
-            @Valid @RequestBody CreateProjectRequest request) {
-        var creator = userService.getByEmail(request.creatorEmail());
+            @Valid @RequestBody CreateProjectRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        var creator = userService.getByEmail(userDetails.getUsername());
         var project = projectService.createProject(
                 request.name(), request.description(), creator);
         return ResponseEntity
@@ -73,33 +64,33 @@ public class ProjectController {
                 .body(projectMapper.toResponse(project));
     }
 
+    @PostMapping("/{id}/members")
+    @PreAuthorize("hasRole('MANAGER')")  // ← MANAGER only
+    @Operation(summary = "Add a member to a project")
+    public ProjectResponse addMember(
+            @PathVariable UUID id,
+            @RequestParam String email) {
+        var project = projectService.getById(id);
+        var user    = userService.getByEmail(email);
+        projectService.addMember(project, user);
+        return projectMapper.toResponse(projectService.getById(id));
+    }
+
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")  // ← MANAGER only
     @Operation(summary = "Update a project")
     public ProjectResponse updateProject(
             @PathVariable UUID id,
             @Valid @RequestBody UpdateProjectRequest request) {
         var project = projectService.getById(id);
-        return projectMapper.toResponse(projectService.updateProject(
-                project, request.name(), request.description(), request.status()));
-    }
-
-    @PostMapping("/{id}/members")
-    @Operation(summary = "Add a member to a project")
-    public ProjectResponse addMember(
-            @PathVariable UUID id,
-            @Valid @RequestBody AddMemberRequest request) {
-        var project = projectService.getById(id);
-        var user    = userService.getByEmail(request.userEmail());
-        projectService.addMember(project, user);
+        projectService.updateProject(
+                project, request.name(), request.description(), request.status());
         return projectMapper.toResponse(projectService.getById(id));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")  // ← MANAGER only
     @Operation(summary = "Delete a project")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Deleted"),
-            @ApiResponse(responseCode = "404", description = "Not found")
-    })
     public ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();

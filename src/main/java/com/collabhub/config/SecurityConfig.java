@@ -2,12 +2,15 @@ package com.collabhub.config;
 
 import com.collabhub.security.JwtAuthFilter;
 import com.collabhub.security.UserDetailsServiceImpl;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -19,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtAuthFilter          jwtAuthFilter;
@@ -51,9 +55,22 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
+                        // Delete operations manager only
+                        .requestMatchers(HttpMethod.DELETE,"/api/projects/**")
+                        .hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.DELETE,"/api/tasks/**")
+                        .hasRole("MANAGER")
+                        // Posting projects manager only
+                        .requestMatchers(HttpMethod.POST,"/api/projects")
+                        .hasRole("MANAGER")
                         // Everything else requires authentication
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex ->ex
+                        .authenticationEntryPoint(((request, response, authException) ->
+                                response.sendError(
+                                        HttpServletResponse.SC_UNAUTHORIZED
+                                ))))
 
                 // Wire in our JWT filter before Spring's default auth filter
                 .addFilterBefore(jwtAuthFilter,
