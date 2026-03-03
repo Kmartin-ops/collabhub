@@ -13,6 +13,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -30,6 +31,7 @@ public class StartupRunner implements ApplicationRunner {
     private final ApplicationContext  context;
     private final CollabHubProperties properties;
     private final Environment         environment;
+    private final PasswordEncoder     passwordEncoder;
 
     public StartupRunner(ProjectService projectService,
                          TaskService taskService,
@@ -37,7 +39,8 @@ public class StartupRunner implements ApplicationRunner {
                          ConsoleNotification notifier,
                          ApplicationContext context,
                          CollabHubProperties properties,
-                         Environment environment) {
+                         Environment environment,
+                         PasswordEncoder passwordEncoder) {
         this.projectService = projectService;
         this.taskService    = taskService;
         this.userService    = userService;
@@ -45,6 +48,7 @@ public class StartupRunner implements ApplicationRunner {
         this.context        = context;
         this.properties     = properties;
         this.environment    = environment;
+        this.passwordEncoder=passwordEncoder;
     }
 
     @Override
@@ -74,7 +78,8 @@ public class StartupRunner implements ApplicationRunner {
         taskService.setDispatcher(dispatcher);
 
         // Users
-        User alice = userService.createUser("Alice", "alice@collabhub.com", "MANAGER");
+        User alice = userService.createUser("Alice Johnson", "alice@collabhub.com", "MANAGER");
+        userService.setPassword(alice, "password123");
         User bob   = userService.createUser("Bob",   "bob@collabhub.com",   "DEVELOPER");
         User carol = userService.createUser("Carol", "carol@collabhub.com", "DEVELOPER");
         User dave  = userService.createUser("Dave",  "dave@collabhub.com",  "DEVELOPER");
