@@ -1,6 +1,8 @@
 package com.collabhub.config;
 
 import com.collabhub.security.JwtAuthFilter;
+import com.collabhub.security.OAuth2SuccessHandler;
+import com.collabhub.security.OAuth2UserServiceImpl;
 import com.collabhub.security.UserDetailsServiceImpl;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -27,54 +29,52 @@ public class SecurityConfig {
 
     private final JwtAuthFilter          jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
+    private final OAuth2UserServiceImpl  oAuth2UserService;
+    private final OAuth2SuccessHandler   oAuth2SuccessHandler;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
-                          com.collabhub.security.UserDetailsServiceImpl userDetailsService) {
-        this.jwtAuthFilter      = jwtAuthFilter;
-        this.userDetailsService = userDetailsService;
+                          UserDetailsServiceImpl userDetailsService,
+                          OAuth2UserServiceImpl oAuth2UserService,
+                          OAuth2SuccessHandler oAuth2SuccessHandler) {
+        this.jwtAuthFilter       = jwtAuthFilter;
+        this.userDetailsService  = userDetailsService;
+        this.oAuth2UserService   = oAuth2UserService;
+        this.oAuth2SuccessHandler = oAuth2SuccessHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http)
-            throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF — we're stateless, no session cookies
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // No sessions — JWT handles state
-                .sessionManagement(s ->
-                        s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Route authorization rules
+                .sessionManagement(s -> s
+                        // OAuth2 needs a session briefly during the redirect flow
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        // Public endpoints — no token needed
                         .requestMatchers(
                                 "/auth/**",
+                                "/login/oauth2/**",         // Google redirect URI
+                                "/oauth2/**",               // OAuth2 initiation
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
-                        // Delete operations manager only
-                        .requestMatchers(HttpMethod.DELETE,"/api/projects/**")
-                        .hasRole("MANAGER")
-                        .requestMatchers(HttpMethod.DELETE,"/api/tasks/**")
-                        .hasRole("MANAGER")
-                        // Posting projects manager only
-                        .requestMatchers(HttpMethod.POST,"/api/projects")
-                        .hasRole("MANAGER")
-                        // Everything else requires authentication
+                        .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/projects").hasRole("MANAGER")
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling(ex ->ex
-                        .authenticationEntryPoint(((request, response, authException) ->
-                                response.sendError(
-                                        HttpServletResponse.SC_UNAUTHORIZED
-                                ))))
-
-                // Wire in our JWT filter before Spring's default auth filter
-                .addFilterBefore(jwtAuthFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
+                .oauth2Login(oauth2 -> oauth2
+                        .redirectionEndpoint(r -> r
+                                .baseUri("/auth/oauth2/callback/*"))
+                        .userInfoEndpoint(u -> u
+                                .userService(oAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler)
+                )
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

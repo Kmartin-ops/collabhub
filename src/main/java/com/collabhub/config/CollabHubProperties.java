@@ -40,13 +40,18 @@ public class CollabHubProperties {
     public static class Security {
         private String jwtSecret;
         private long jwtExpirationMs;
+        private long refreshExpirationsMS;
 
         public String getJwtSecret() { return jwtSecret; }
         public void setJwtSecret(String jwtSecret) { this.jwtSecret = jwtSecret; }
+
         public long getJwtExpirationMs() { return jwtExpirationMs; }
         public void setJwtExpirationMs(long jwtExpirationMs) {
             this.jwtExpirationMs = jwtExpirationMs;
         }
+
+        public long getRefreshExpirationsMS() {return refreshExpirationsMS;}
+        public void setRefreshExpirationsMS(long refreshExpirationsMS) {this.refreshExpirationsMS = refreshExpirationsMS;}
     }
 
     public static class Notifications {
