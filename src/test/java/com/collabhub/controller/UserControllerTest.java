@@ -4,8 +4,11 @@ import com.collabhub.domain.User;
 import com.collabhub.exception.DuplicateResourceException;
 import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.mapper.UserMapperImpl;
+import com.collabhub.security.JwtService;
+import com.collabhub.security.UserDetailsServiceImpl;
 import com.collabhub.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,6 +30,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(UserMapperImpl.class)
 @DisplayName("UserController")
 class UserControllerTest {
@@ -36,6 +40,12 @@ class UserControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsServiceImpl userDetailsService;
 
     @MockBean
     private UserService userService;
