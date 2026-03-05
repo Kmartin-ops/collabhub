@@ -21,6 +21,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
+
 
 @Configuration
 @EnableWebSecurity
@@ -31,21 +33,25 @@ public class SecurityConfig {
     private final UserDetailsServiceImpl userDetailsService;
     private final OAuth2UserServiceImpl  oAuth2UserService;
     private final OAuth2SuccessHandler   oAuth2SuccessHandler;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter,
                           UserDetailsServiceImpl userDetailsService,
                           OAuth2UserServiceImpl oAuth2UserService,
-                          OAuth2SuccessHandler oAuth2SuccessHandler) {
+                          OAuth2SuccessHandler oAuth2SuccessHandler,
+                          CorsConfigurationSource corsConfigurationSource) {
         this.jwtAuthFilter       = jwtAuthFilter;
         this.userDetailsService  = userDetailsService;
         this.oAuth2UserService   = oAuth2UserService;
         this.oAuth2SuccessHandler = oAuth2SuccessHandler;
+        this.corsConfigurationSource = corsConfigurationSource;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource( corsConfigurationSource))
                 .sessionManagement(s -> s
                         // OAuth2 needs a session briefly during the redirect flow
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
