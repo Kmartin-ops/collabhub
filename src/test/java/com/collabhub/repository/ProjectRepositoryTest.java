@@ -34,8 +34,8 @@ class ProjectRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        alice  = em.persistAndFlush(new User("Alice", "alice@test.com", "MANAGER"));
-        bob    = em.persistAndFlush(new User("Bob",   "bob@test.com",   "DEVELOPER"));
+        alice  = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER"));
+        bob    = em.persistAndFlush(user("Bob",   "bob@test.com",   "DEVELOPER"));
 
         mvp = new Project("CollabHub MVP", "Core platform");
         mvp.addMember(alice);
@@ -45,6 +45,12 @@ class ProjectRepositoryTest {
         mobile = new Project("CollabHub Mobile", "Mobile app");
         mobile.addMember(alice);
         mobile = em.persistAndFlush(mobile);
+    }
+
+    private User user(String name, String email, String role) {
+        User user = new User(name, email, role);
+        user.setPasswordHash("test-password-hash");
+        return user;
     }
 
     @Nested
@@ -112,7 +118,7 @@ class ProjectRepositoryTest {
         @DisplayName("should return empty for user with no projects")
         void shouldReturnEmptyForNonMember() {
             User carol = em.persistAndFlush(
-                    new User("Carol", "carol@test.com", "DEVELOPER"));
+                    user("Carol", "carol@test.com", "DEVELOPER"));
             List<Project> carolProjects = projectRepository.findByMember(carol);
             assertTrue(carolProjects.isEmpty());
         }

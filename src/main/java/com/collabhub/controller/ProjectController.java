@@ -8,14 +8,15 @@ import com.collabhub.service.ProjectService;
 import com.collabhub.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,8 +39,11 @@ public class ProjectController {
 
     @GetMapping
     @Operation(summary = "Get all projects")
-    public List<ProjectResponse> getAllProjects() {
+    public List<ProjectResponse> getAllProjects(
+            @RequestParam(required = false) String status) {
         return projectService.getAllProjects().stream()
+                .filter(project -> status == null || status.isBlank()
+                        || status.equalsIgnoreCase(project.getStatus()))
                 .map(projectMapper::toResponse)
                 .toList();
     }
@@ -55,13 +59,34 @@ public class ProjectController {
     @Operation(summary = "Create a new project")
     public ResponseEntity<ProjectResponse> createProject(
             @Valid @RequestBody CreateProjectRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        var creator = userService.getByEmail(userDetails.getUsername());
+            Principal principal,
+            HttpServletRequest httpRequest) {
+        var creatorEmail = resolveAuthenticatedEmail(principal, httpRequest);
+        var creator = userService.getByEmail(creatorEmail);
         var project = projectService.createProject(
                 request.name(), request.description(), creator);
         return ResponseEntity
                 .created(URI.create("/api/projects/" + project.getId()))
                 .body(projectMapper.toResponse(project));
+    }
+
+    private String resolveAuthenticatedEmail(Principal principal, HttpServletRequest request) {
+        if (principal != null && principal.getName() != null) {
+            return principal.getName();
+        }
+        Principal requestPrincipal = request.getUserPrincipal();
+        if (requestPrincipal != null && requestPrincipal.getName() != null) {
+            return requestPrincipal.getName();
+        }
+        Object securityContext = request.getSession(false) == null
+                ? null
+                : request.getSession(false).getAttribute("SPRING_SECURITY_CONTEXT");
+        if (securityContext instanceof SecurityContext context
+                && context.getAuthentication() != null
+                && context.getAuthentication().getName() != null) {
+            return context.getAuthentication().getName();
+        }
+        throw new IllegalStateException("Authenticated user is required to create a project");
     }
 
     @PostMapping("/{id}/members")

@@ -2,6 +2,18 @@ spring:
   application:
     name: collabhub
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: 1009737418594-3ra58ve1sikpomotot4otmngvakkn25d.apps.googleusercontent.com
+            client-secret: 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
+            scope:
+              - email
+              - profile
+            redirect-uri: "{baseUrl}/auth/oauth2/callback/{registrationId}"
+
   # Database
   datasource:
     url: jdbc:postgresql://localhost:5432/collabhub
@@ -18,8 +30,8 @@ spring:
   # JPA / Hibernate
   jpa:
     hibernate:
-      ddl-auto: validate        # never auto-create — Flyway owns the schema
-    show-sql: false             # set to true in dev for debugging
+      ddl-auto: validate
+    show-sql: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -38,13 +50,14 @@ spring:
     deserialization:
       fail-on-unknown-properties: false
 
-  #Default pagination settings
+  # Default pagination settings
   data:
     web:
       pageable:
         default-page-size: 20
         max-page-size: 100
         one-indexed-parameters: false
+
 server:
   port: 8080
 
@@ -58,7 +71,8 @@ collabhub:
     max-page-size: 100
   security:
     jwt-secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
-    jwt-expiration-ms: 86400000  # 24 hours
+    jwt-expiration-ms: 900000
+    refresh-expirations-ms: 604800000
 
 logging:
   level:

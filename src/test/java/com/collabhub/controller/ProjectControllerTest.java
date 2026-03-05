@@ -4,9 +4,12 @@ import com.collabhub.domain.Project;
 import com.collabhub.domain.User;
 import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.mapper.ProjectMapperImpl;
+import com.collabhub.security.JwtService;
+import com.collabhub.security.UserDetailsServiceImpl;
 import com.collabhub.service.ProjectService;
 import com.collabhub.service.UserService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,9 +29,11 @@ import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProjectController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(ProjectMapperImpl.class)
 @DisplayName("ProjectController")
 class ProjectControllerTest {
@@ -38,6 +43,12 @@ class ProjectControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsServiceImpl userDetailsService;
 
     @MockBean
     private ProjectService projectService;
@@ -55,7 +66,6 @@ class ProjectControllerTest {
         bob   = new User("Bob",   "bob@test.com",   "DEVELOPER");
 
         mvp = new Project("CollabHub MVP", "Core platform");
-        // ← force a known ID so URLs are valid
         mvp.setId(UUID.randomUUID());
         mvp.addMember(alice);
         mvp.addMember(bob);
@@ -63,6 +73,7 @@ class ProjectControllerTest {
         when(projectService.getById(mvp.getId()))
                 .thenReturn(mvp);
     }
+
     // ── GET /api/projects ─────────────────────────────────────
     @Nested
     @DisplayName("GET /api/projects")
@@ -145,6 +156,7 @@ class ProjectControllerTest {
                     .thenReturn(mvp);
 
             mockMvc.perform(post("/api/projects")
+                            .with(user("alice@collabhub.com").roles("MANAGER"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(Map.of(
                                     "name",         "CollabHub MVP",
@@ -163,6 +175,7 @@ class ProjectControllerTest {
                     .thenThrow(new ResourceNotFoundException("User", "unknown@test.com"));
 
             mockMvc.perform(post("/api/projects")
+                            .with(user("alice@collabhub.com").roles("MANAGER"))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(Map.of(
                                     "name",         "Test Project",

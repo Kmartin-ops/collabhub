@@ -38,8 +38,8 @@ class TaskRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        alice   = em.persistAndFlush(new User("Alice", "alice@test.com", "MANAGER"));
-        bob     = em.persistAndFlush(new User("Bob",   "bob@test.com",   "DEVELOPER"));
+        alice   = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER"));
+        bob     = em.persistAndFlush(user("Bob",   "bob@test.com",   "DEVELOPER"));
         project = em.persistAndFlush(new Project("Test Project", "desc"));
 
         t1 = new Task("Build API",      "HIGH",   LocalDate.now().plusDays(3),  project);
@@ -56,6 +56,12 @@ class TaskRepositoryTest {
         t2 = em.persistAndFlush(t2);
         t3 = em.persistAndFlush(t3);
         t4 = em.persistAndFlush(t4);
+    }
+
+    private User user(String name, String email, String role) {
+        User user = new User(name, email, role);
+        user.setPasswordHash("test-password-hash");
+        return user;
     }
 
     @Nested

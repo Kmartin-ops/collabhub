@@ -4,7 +4,10 @@ import com.collabhub.dto.ErrorResponse;
 import com.collabhub.exception.CollabHubException;
 import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.exception.DuplicateResourceException;
+import com.collabhub.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -12,10 +15,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     // ── 1. Bean Validation failures (@Valid) ──────────────────
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -102,5 +107,25 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(500, "Internal Server Error",
                         request.getRequestURI(),
                         "An unexpected error occurred"));
+    }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request){
+        log.warn("Bad request: {}",ex.getMessage());
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        LocalDateTime.now(),400,"Bad Request",
+                        request.getRequestURI(), List.of(ex.getMessage())));
+    }
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalState(
+            IllegalStateException ex,
+            HttpServletRequest request) {
+        log.warn("Invalid state: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse(
+                        LocalDateTime.now(), 401, "Unauthorized",
+                        request.getRequestURI(), List.of(ex.getMessage())));
     }
 }

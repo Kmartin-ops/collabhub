@@ -1,8 +1,6 @@
 package com.collabhub.controller;
 
-import com.collabhub.dto.AuthResponse;
-import com.collabhub.dto.LoginRequest;
-import com.collabhub.dto.RegisterRequest;
+import com.collabhub.dto.*;
 import com.collabhub.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -10,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,5 +47,30 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+    @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "New access token issued"),
+            @ApiResponse(responseCode = "400", description = "Invalid or expired refresh token")
+    })
+    public ResponseEntity<AuthResponse> refresh(
+            @Valid@RequestBody RefreshRequest request){
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+    @PostMapping("/logout")
+    @Operation(summary = "Logout — revoke refresh tokens")
+    public ResponseEntity<AuthResponse> logout(
+            @AuthenticationPrincipal UserDetails  userDetails){
+        authService.logout(userDetails.getUsername());
+        return ResponseEntity.noContent().build();
+    }
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password")
+    public ResponseEntity<Void> changePassword(
+            @Valid@RequestBody ChangePasswordRequest request,
+            @AuthenticationPrincipal UserDetails userDetails){
+        authService.changePassword(userDetails.getUsername(),request);
+        return ResponseEntity.noContent().build();
     }
 }
