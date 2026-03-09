@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.concurrent.TimeUnit;
 
 @Configuration
-@EnableCaching  // activates Spring's caching infrastructure
+@EnableCaching // activates Spring's caching infrastructure
 public class CacheConfig {
 
     @Bean
@@ -18,10 +18,9 @@ public class CacheConfig {
         CaffeineCacheManager manager = new CaffeineCacheManager();
 
         // Default spec — applies to all caches unless overridden
-        manager.setCaffeine(Caffeine.newBuilder()
-                .maximumSize(500)               // max 500 entries per cache
-                .expireAfterWrite(5, TimeUnit.MINUTES)  // expire 5 mins after write
-                .recordStats());                // enable hit/miss metrics
+        manager.setCaffeine(Caffeine.newBuilder().maximumSize(500) // max 500 entries per cache
+                .expireAfterWrite(5, TimeUnit.MINUTES) // expire 5 mins after write
+                .recordStats()); // enable hit/miss metrics
 
         return manager;
     }

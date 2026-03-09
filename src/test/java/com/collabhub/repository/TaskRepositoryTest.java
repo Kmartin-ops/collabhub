@@ -38,14 +38,14 @@ class TaskRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        alice   = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER"));
-        bob     = em.persistAndFlush(user("Bob",   "bob@test.com",   "DEVELOPER"));
+        alice = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER","password123!"));
+        bob = em.persistAndFlush(user("Bob", "bob@test.com", "DEVELOPER","password123!"));
         project = em.persistAndFlush(new Project("Test Project", "desc"));
 
-        t1 = new Task("Build API",      "HIGH",   LocalDate.now().plusDays(3),  project);
-        t2 = new Task("Write tests",    "MEDIUM", LocalDate.now().plusDays(5),  project);
-        t3 = new Task("Fix login bug",  "HIGH",   LocalDate.now().minusDays(1), project);
-        t4 = new Task("Update docs",    "LOW",    LocalDate.now().plusDays(10), project);
+        t1 = new Task("Build API", "HIGH", LocalDate.now().plusDays(3), project);
+        t2 = new Task("Write tests", "MEDIUM", LocalDate.now().plusDays(5), project);
+        t3 = new Task("Fix login bug", "HIGH", LocalDate.now().minusDays(1), project);
+        t4 = new Task("Update docs", "LOW", LocalDate.now().plusDays(10), project);
 
         t1.setAssignee(bob);
         t2.setAssignee(bob);
@@ -58,8 +58,8 @@ class TaskRepositoryTest {
         t4 = em.persistAndFlush(t4);
     }
 
-    private User user(String name, String email, String role) {
-        User user = new User(name, email, role);
+    private User user(String name, String email, String role,String passwordHash) {
+        User user = new User(name, email, role,passwordHash);
         user.setPasswordHash("test-password-hash");
         return user;
     }
@@ -78,8 +78,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should return empty for unknown project")
         void shouldReturnEmptyForUnknown() {
-            List<Task> tasks = taskRepository.findByProjectId(
-                    java.util.UUID.randomUUID());
+            List<Task> tasks = taskRepository.findByProjectId(java.util.UUID.randomUUID());
             assertTrue(tasks.isEmpty());
         }
     }
@@ -91,8 +90,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should find tasks with matching status")
         void shouldFindByStatus() {
-            List<Task> inProgress = taskRepository
-                    .findByProjectIdAndStatus(project.getId(), "IN_PROGRESS");
+            List<Task> inProgress = taskRepository.findByProjectIdAndStatus(project.getId(), "IN_PROGRESS");
             assertEquals(1, inProgress.size());
             assertEquals("Fix login bug", inProgress.get(0).getTitle());
         }
@@ -100,8 +98,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should find backlog tasks")
         void shouldFindBacklogTasks() {
-            List<Task> backlog = taskRepository
-                    .findByProjectIdAndStatus(project.getId(), "BACKLOG");
+            List<Task> backlog = taskRepository.findByProjectIdAndStatus(project.getId(), "BACKLOG");
             assertEquals(3, backlog.size());
         }
     }
@@ -133,8 +130,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should detect overdue task")
         void shouldDetectOverdueTask() {
-            List<Task> overdue = taskRepository
-                    .findByDueDateBeforeAndStatusNot(LocalDate.now(), "DONE");
+            List<Task> overdue = taskRepository.findByDueDateBeforeAndStatusNot(LocalDate.now(), "DONE");
             assertEquals(1, overdue.size());
             assertEquals("Fix login bug", overdue.get(0).getTitle());
         }
@@ -145,8 +141,7 @@ class TaskRepositoryTest {
             t3.setStatus("DONE");
             em.persistAndFlush(t3);
 
-            List<Task> overdue = taskRepository
-                    .findByDueDateBeforeAndStatusNot(LocalDate.now(), "DONE");
+            List<Task> overdue = taskRepository.findByDueDateBeforeAndStatusNot(LocalDate.now(), "DONE");
             assertTrue(overdue.isEmpty());
         }
     }
@@ -189,8 +184,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should combine multiple filters")
         void shouldCombineFilters() {
-            var spec = TaskSpecification.withFilters(
-                    null, "HIGH", project.getId(), null, null);
+            var spec = TaskSpecification.withFilters(null, "HIGH", project.getId(), null, null);
             var pageable = PageRequest.of(0, 10);
             Page<Task> result = taskRepository.findAll(spec, pageable);
 
@@ -200,7 +194,7 @@ class TaskRepositoryTest {
         @Test
         @DisplayName("should paginate results correctly")
         void shouldPaginateCorrectly() {
-            var spec     = TaskSpecification.withFilters(null, null, null, null, null);
+            var spec = TaskSpecification.withFilters(null, null, null, null, null);
             var pageable = PageRequest.of(0, 2, Sort.by("dueDate"));
             Page<Task> page0 = taskRepository.findAll(spec, pageable);
 

@@ -9,9 +9,9 @@ import org.mapstruct.MappingConstants;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface TaskMapper {
 
-    @Mapping(target = "projectId",    source = "project.id")
-    @Mapping(target = "projectName",  source = "project.name")
-    @Mapping(target = "assigneeId",   source = "assignee.id")
+    @Mapping(target = "projectId", source = "project.id")
+    @Mapping(target = "projectName", source = "project.name")
+    @Mapping(target = "assigneeId", source = "assignee.id")
     @Mapping(target = "assigneeName", source = "assignee.name")
     TaskResponse toResponse(Task task);
 }

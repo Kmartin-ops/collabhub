@@ -3,7 +3,12 @@ package com.collabhub.registry;
 import com.collabhub.domain.Project;
 import com.collabhub.domain.User;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 public class ProjectRegistry {
 
@@ -25,16 +30,13 @@ public class ProjectRegistry {
 
     // Find all projects a specific user is a member of
     public List<Project> findByMember(User user) {
-        return store.values().stream()
-                .filter(p -> p.getMembers().contains(user)) // Set.contains() uses equals()
+        return store.values().stream().filter(p -> p.getMembers().contains(user)) // Set.contains() uses equals()
                 .toList();
     }
 
     // Find active projects only
     public List<Project> findActive() {
-        return store.values().stream()
-                .filter(p -> "ACTIVE".equals(p.getStatus()))
-                .toList();
+        return store.values().stream().filter(p -> "ACTIVE".equals(p.getStatus())).toList();
     }
 
     public boolean exists(UUID id) {

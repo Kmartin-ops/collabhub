@@ -8,25 +8,18 @@ import java.util.UUID;
 @Schema(description = "Project data returned by the API")
 public record ProjectResponse(
 
-        @Schema(description = "Unique identifier")
-        UUID id,
+        @Schema(description = "Unique identifier") UUID id,
 
-        @Schema(description = "Project name", example = "CollabHub MVP")
-        String name,
+        @Schema(description = "Project name", example = "CollabHub MVP") String name,
 
-        @Schema(description = "Project description")
-        String description,
+        @Schema(description = "Project description") String description,
 
-        @Schema(description = "Status", example = "ACTIVE",
-                allowableValues = {"ACTIVE", "COMPLETED", "ARCHIVED"})
-        String status,
+        @Schema(description = "Status", example = "ACTIVE", allowableValues = {
+                "ACTIVE", "COMPLETED", "ARCHIVED" }) String status,
 
-        @Schema(description = "Names of all project members")
-        List<String> memberNames,
+        @Schema(description = "Names of all project members") List<String> memberNames,
 
-        @Schema(description = "Total number of members")
-        int memberCount,
+        @Schema(description = "Total number of members") int memberCount,
 
-        @Schema(description = "Creation timestamp")
-        LocalDateTime createdAt
-) {}
+        @Schema(description = "Creation timestamp") LocalDateTime createdAt) {
+}

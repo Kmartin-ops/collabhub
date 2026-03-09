@@ -1,6 +1,11 @@
 package com.collabhub.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.util.Objects;
 
 @Entity
@@ -19,25 +24,43 @@ public class Comment extends BaseEntity {
     @JoinColumn(name = "task_id", nullable = false)
     private Task task;
 
-    protected Comment() {}
+    protected Comment() {
+    }
 
     public Comment(String content, User author) {
         super();
         this.content = content;
-        this.author  = author;
+        this.author = author;
     }
 
-    public String getContent() { return content; }
-    public User getAuthor()    { return author; }
-    public Task getTask()      { return task; }
+    public String getContent() {
+        return content;
+    }
 
-    public void setContent(String content) { this.content = content; }
-    public void setTask(Task task)         { this.task = task; }
+    public User getAuthor() {
+        return author;
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public void setTask(Task task) {
+        this.task = task;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Comment other)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Comment other)) {
+            return false;
+        }
         return Objects.equals(getId(), other.getId());
     }
 
@@ -48,8 +71,7 @@ public class Comment extends BaseEntity {
 
     @Override
     public String toString() {
-        return "Comment{" + super.toString()
-                + ", author='" + author.getName() + '\''
-                + ", content='" + content + '\'' + '}';
+        return "Comment{" + super.toString() + ", author='" + author.getName() + '\'' + ", content='" + content + '\''
+                + '}';
     }
 }

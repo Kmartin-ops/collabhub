@@ -17,51 +17,49 @@ import java.util.List;
 @Service
 public class UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UserService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
-    @CacheEvict(value = "users", allEntries = true) // clear cache on write
-    public User createUser(String name, String email, String role) {
-        log.debug("Creating user email={} role={}", email, role);
+    @CacheEvict(value = "users", allEntries = true)
+    public User createUser(String name, String email, String role, String rawPassword) {
+        LOG.debug("Creating user email={} role={}", email, role);
         if (userRepository.existsByEmail(email)) {
-            log.warn("Duplicate user attempt: email={}", email);
+            LOG.warn("Duplicate user attempt: email={}", email);
             throw new DuplicateResourceException("User", email);
         }
-        User user = new User(name, email, role);
+        User user = new User(name, email, role, rawPassword);
+        user.setPasswordHash(passwordEncoder.encode(rawPassword));
         User saved = userRepository.save(user);
-        log.info("User created: name='{}' email={} role={}", name, email, role);
+        LOG.info("User created: name='{}' email={} role={}", name, email, role);
         return saved;
     }
 
     @Transactional(readOnly = true)
-    @Cacheable("users")  // cache the full user list
+    @Cacheable("users") // cache the full user list
     public User getByEmail(String email) {
-        log.debug("Fetching user email={}", email);
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    log.warn("User not found: email={}", email);
-                    return new ResourceNotFoundException("User", email);
-                });
+        LOG.debug("Fetching user email={}", email);
+        return userRepository.findByEmail(email).orElseThrow(() -> {
+            LOG.warn("User not found: email={}", email);
+            return new ResourceNotFoundException("User", email);
+        });
     }
 
     @Transactional(readOnly = true)
     public User getById(java.util.UUID id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User", id));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User", id));
     }
 
     @Transactional(readOnly = true)
     public List<User> findAll() {
-        log.debug("Fetching all users");
+        LOG.debug("Fetching all users");
         return userRepository.findAll();
     }
 

@@ -1,10 +1,14 @@
 package com.collabhub.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-@MappedSuperclass  // not an entity itself — shares mappings with subclasses
+@MappedSuperclass // not an entity itself — shares mappings with subclasses
 public abstract class BaseEntity {
 
     @Id
@@ -24,8 +28,13 @@ public abstract class BaseEntity {
         this.createdAt = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
     @Override
     public String toString() {

@@ -8,7 +8,7 @@ public class CollabHubProperties {
     private String appDescription;
     private Notifications notifications = new Notifications();
     private Pagination pagination = new Pagination();
-    private Security security = new Security();  // ← add
+    private Security security = new Security(); // ← add
 
     public String getAppDescription() {
         return appDescription;
@@ -34,43 +34,83 @@ public class CollabHubProperties {
         this.pagination = pagination;
     }
 
-    public Security getSecurity() { return security; }
-    public void setSecurity(Security security) { this.security = security; }
+    public Security getSecurity() {
+        return security;
+    }
+
+    public void setSecurity(Security security) {
+        this.security = security;
+    }
 
     public static class Security {
         private String jwtSecret;
         private long jwtExpirationMs;
         private long refreshExpirationsMS;
 
-        public String getJwtSecret() { return jwtSecret; }
-        public void setJwtSecret(String jwtSecret) { this.jwtSecret = jwtSecret; }
+        public String getJwtSecret() {
+            return jwtSecret;
+        }
 
-        public long getJwtExpirationMs() { return jwtExpirationMs; }
+        public void setJwtSecret(String jwtSecret) {
+            this.jwtSecret = jwtSecret;
+        }
+
+        public long getJwtExpirationMs() {
+            return jwtExpirationMs;
+        }
+
         public void setJwtExpirationMs(long jwtExpirationMs) {
             this.jwtExpirationMs = jwtExpirationMs;
         }
 
-        public long getRefreshExpirationsMS() {return refreshExpirationsMS;}
-        public void setRefreshExpirationsMS(long refreshExpirationsMS) {this.refreshExpirationsMS = refreshExpirationsMS;}
+        public long getRefreshExpirationsMS() {
+            return refreshExpirationsMS;
+        }
+
+        public void setRefreshExpirationsMS(long refreshExpirationsMS) {
+            this.refreshExpirationsMS = refreshExpirationsMS;
+        }
     }
 
     public static class Notifications {
         private int dispatcherThreads;
         private int queueCapacity;
 
-        public int getDispatcherThreads() { return dispatcherThreads; }
-        public void setDispatcherThreads(int t) { this.dispatcherThreads = t; }
-        public int getQueueCapacity() { return queueCapacity; }
-        public void setQueueCapacity(int q) { this.queueCapacity = q; }
+        public int getDispatcherThreads() {
+            return dispatcherThreads;
+        }
+
+        public void setDispatcherThreads(int t) {
+            this.dispatcherThreads = t;
+        }
+
+        public int getQueueCapacity() {
+            return queueCapacity;
+        }
+
+        public void setQueueCapacity(int q) {
+            this.queueCapacity = q;
+        }
     }
 
     public static class Pagination {
         private int defaultPageSize;
         private int maxPageSize;
 
-        public int getDefaultPageSize() { return defaultPageSize; }
-        public void setDefaultPageSize(int s) { this.defaultPageSize = s; }
-        public int getMaxPageSize() { return maxPageSize; }
-        public void setMaxPageSize(int s) { this.maxPageSize = s; }
+        public int getDefaultPageSize() {
+            return defaultPageSize;
+        }
+
+        public void setDefaultPageSize(int s) {
+            this.defaultPageSize = s;
+        }
+
+        public int getMaxPageSize() {
+            return maxPageSize;
+        }
+
+        public void setMaxPageSize(int s) {
+            this.maxPageSize = s;
+        }
     }
 }

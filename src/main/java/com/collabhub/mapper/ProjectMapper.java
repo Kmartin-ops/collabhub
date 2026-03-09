@@ -14,20 +14,17 @@ import java.util.Set;
 @Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
 public interface ProjectMapper {
 
-    @Mapping(target = "memberNames",  source = "members",
-            qualifiedByName = "membersToNames")
-    @Mapping(target = "memberCount",  source = "members",
-            qualifiedByName = "membersToCount")
+    @Mapping(target = "memberNames", source = "members", qualifiedByName = "membersToNames")
+    @Mapping(target = "memberCount", source = "members", qualifiedByName = "membersToCount")
     ProjectResponse toResponse(Project project);
 
     // Named helper — converts Set<User> to List<String> of names
     @Named("membersToNames")
     default List<String> membersToNames(Set<User> members) {
-        if (members == null) return List.of();
-        return members.stream()
-                .map(User::getName)
-                .sorted()
-                .toList();
+        if (members == null) {
+            return List.of();
+        }
+        return members.stream().map(User::getName).sorted().toList();
     }
 
     // Named helper — converts Set<User> to count

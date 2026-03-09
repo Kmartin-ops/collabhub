@@ -16,22 +16,19 @@ import java.util.Map;
 @Component
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
-    private final JwtService      jwtService;
-    private final UserRepository  userRepository;
-    private final ObjectMapper    objectMapper;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
-    public OAuth2SuccessHandler(JwtService jwtService,
-                                UserRepository userRepository,
-                                ObjectMapper objectMapper) {
-        this.jwtService     = jwtService;
+    public OAuth2SuccessHandler(JwtService jwtService, UserRepository userRepository, ObjectMapper objectMapper) {
+        this.jwtService = jwtService;
         this.userRepository = userRepository;
-        this.objectMapper   = objectMapper;
+        this.objectMapper = objectMapper;
     }
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        Authentication authentication) throws IOException {
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
+            Authentication authentication) throws IOException {
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
         String email = oAuth2User.getAttribute("email");
 
@@ -43,13 +40,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         // Return JWT as JSON — frontend reads this
         response.setContentType("application/json");
-        response.getWriter().write(
-                objectMapper.writeValueAsString(Map.of(
-                        "accessToken", token,
-                        "email", email,
-                        "name", user.getName(),
-                        "role", user.getRole()
-                ))
-        );
+        response.getWriter().write(objectMapper.writeValueAsString(
+                Map.of("accessToken", token, "email", email, "name", user.getName(), "role", user.getRole())));
     }
 }

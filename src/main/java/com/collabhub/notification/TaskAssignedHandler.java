@@ -11,13 +11,8 @@ public final class TaskAssignedHandler extends StatusChangeHandler {
 
     @Override
     public void handle(Task task, User actor) {
-        String assigneeName = task.getAssignee() != null
-                ? task.getAssignee().getName()
-                : "nobody";
+        String assigneeName = task.getAssignee() != null ? task.getAssignee().getName() : "nobody";
 
-        notifier.notify(
-                actor.getName(),
-                "Task '" + task.getTitle() + "' was assigned to: " + assigneeName
-        );
+        notifier.notify(actor.getName(), "Task '" + task.getTitle() + "' was assigned to: " + assigneeName);
     }
 }

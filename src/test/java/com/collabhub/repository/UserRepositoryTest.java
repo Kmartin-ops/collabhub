@@ -31,12 +31,12 @@ class UserRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        alice = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER"));
-        bob = em.persistAndFlush(user("Bob", "bob@test.com", "DEVELOPER"));
+        alice = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER","password123!"));
+        bob = em.persistAndFlush(user("Bob", "bob@test.com", "DEVELOPER","password123!"));
     }
 
-    private User user(String name, String email, String role) {
-        User user = new User(name, email, role);
+    private User user(String name, String email, String role,String passwordHash) {
+        User user = new User(name, email, role,passwordHash);
         user.setPasswordHash("test-password-hash");
         return user;
     }
@@ -105,16 +105,14 @@ class UserRepositoryTest {
         @Test
         @DisplayName("should persist user with generated UUID")
         void shouldPersistWithId() {
-            User carol = userRepository.save(
-                    user("Carol", "carol@test.com", "DEVELOPER"));
+            User carol = userRepository.save(user("Carol", "carol@test.com", "DEVELOPER","password123!"));
             assertNotNull(carol.getId());
         }
 
         @Test
         @DisplayName("should persist createdAt timestamp")
         void shouldPersistCreatedAt() {
-            User carol = userRepository.save(
-                    user("Carol", "carol@test.com", "DEVELOPER"));
+            User carol = userRepository.save(user("Carol", "carol@test.com", "DEVELOPER","password123!"));
             assertNotNull(carol.getCreatedAt());
         }
 

@@ -13,28 +13,15 @@ import java.util.UUID;
 @Schema(description = "Request body for creating a new task")
 public record CreateTaskRequest(
 
-        @Schema(description = "Task title", example = "Build login page")
-        @NotBlank(message = "Title is required")
-        String title,
+        @Schema(description = "Task title", example = "Build login page") @NotBlank(message = "Title is required") String title,
 
-        @Schema(description = "Priority", example = "HIGH",
-                allowableValues = {"LOW", "MEDIUM", "HIGH"})
-        @NotBlank(message = "Priority is required")
-        @Pattern(regexp = "LOW|MEDIUM|HIGH",
-                message = "Priority must be LOW, MEDIUM, or HIGH")
-        String priority,
+        @Schema(description = "Priority", example = "HIGH", allowableValues = {
+                "LOW", "MEDIUM",
+                "HIGH" }) @NotBlank(message = "Priority is required") @Pattern(regexp = "LOW|MEDIUM|HIGH", message = "Priority must be LOW, MEDIUM, or HIGH") String priority,
 
-        @Schema(description = "Due date", example = "2024-12-31")
-        @NotNull(message = "Due date is required")
-        @Future(message = "Due date must be in the future")
-        LocalDate dueDate,
+        @Schema(description = "Due date", example = "2024-12-31") @NotNull(message = "Due date is required") @Future(message = "Due date must be in the future") LocalDate dueDate,
 
-        @Schema(description = "Project ID this task belongs to")
-        @NotNull(message = "Project ID is required")
-        UUID projectId,
+        @Schema(description = "Project ID this task belongs to") @NotNull(message = "Project ID is required") UUID projectId,
 
-        @Schema(description = "Creator email")
-        @NotBlank(message = "Creator email is required")
-        @Email(message = "Creator email must be valid")
-        String creatorEmail
-) {}
+        @Schema(description = "Creator email") @NotBlank(message = "Creator email is required") @Email(message = "Creator email must be valid") String creatorEmail) {
+}

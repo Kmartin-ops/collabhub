@@ -1,6 +1,5 @@
 package com.collabhub.security;
 
-
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import jakarta.servlet.FilterChain;
@@ -26,33 +25,26 @@ public class RateLimitingFilter extends OncePerRequestFilter {
 
     private Bucket resolveBucket(String ip) {
         return buckets.computeIfAbsent(ip, k -> Bucket.builder()
-                .addLimit(Bandwidth.builder()
-                        .capacity(5)
-                        .refillIntervally(5, Duration.ofMinutes(1))
-                        .build())
-                .build());
+                .addLimit(Bandwidth.builder().capacity(5).refillIntervally(5, Duration.ofMinutes(1)).build()).build());
     }
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        //Only rate-limit login endpoint
-        if (!request.getRequestURI().equals("/auth/login")){
-            filterChain.doFilter(request,response);
+        // Only rate-limit login endpoint
+        if (!request.getRequestURI().equals("/auth/login")) {
+            filterChain.doFilter(request, response);
             return;
         }
-        String ip =request.getRemoteAddr();
+        String ip = request.getRemoteAddr();
         Bucket bucket = resolveBucket(ip);
 
-        if (bucket.tryConsume(1)){
-            filterChain.doFilter(request,response);
-        } else{
+        if (bucket.tryConsume(1)) {
+            filterChain.doFilter(request, response);
+        } else {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
-            response.getWriter().write(
-                    "{\"error\": \"Too many login attempts. Try again in 1 minute.\"}"
-            );
+            response.getWriter().write("{\"error\": \"Too many login attempts. Try again in 1 minute.\"}");
         }
 
     }

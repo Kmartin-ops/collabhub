@@ -16,7 +16,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
@@ -27,17 +32,16 @@ import java.util.List;
 public class UserController {
 
     private final UserService userService;
-    private final UserMapper  userMapper;
+    private final UserMapper userMapper;
 
     public UserController(UserService userService, UserMapper userMapper) {
         this.userService = userService;
-        this.userMapper  = userMapper;
+        this.userMapper = userMapper;
     }
 
     @GetMapping("/me")
     @Operation(summary = "Get current authenticated user")
-    public UserResponse getMe(
-            @AuthenticationPrincipal UserDetails userDetails){
+    public UserResponse getMe(@AuthenticationPrincipal UserDetails userDetails) {
         User user = userService.getByEmail(userDetails.getUsername());
         return userMapper.toResponse(user);
     }
@@ -46,38 +50,25 @@ public class UserController {
     @Operation(summary = "Get all users")
     @ApiResponse(responseCode = "200", description = "List of users returned")
     public List<UserResponse> getAllUsers() {
-        return userService.findAll().stream()
-                .map(userMapper::toResponse)
-                .toList();
+        return userService.findAll().stream().map(userMapper::toResponse).toList();
     }
 
     @GetMapping("/{email}")
     @Operation(summary = "Get user by email")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "User found"),
-            @ApiResponse(responseCode = "404", description = "User not found",
-                    content = @Content(schema = @Schema(
-                            implementation = com.collabhub.dto.ErrorResponse.class)))
-    })
+    @ApiResponses({ @ApiResponse(responseCode = "200", description = "User found"),
+            @ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = com.collabhub.dto.ErrorResponse.class))) })
     public UserResponse getUserByEmail(
-            @Parameter(description = "User email", example = "alice@collabhub.com")
-            @PathVariable String email) {
+            @Parameter(description = "User email", example = "alice@collabhub.com") @PathVariable String email) {
         return userMapper.toResponse(userService.getByEmail(email));
     }
 
     @PostMapping
     @Operation(summary = "Create a new user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "User created"),
+    @ApiResponses({ @ApiResponse(responseCode = "201", description = "User created"),
             @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "409", description = "Email already exists")
-    })
-    public ResponseEntity<UserResponse> createUser(
-            @Valid @RequestBody CreateUserRequest request) {
-        var user = userService.createUser(
-                request.name(), request.email(), request.role());
-        return ResponseEntity
-                .created(URI.create("/api/users/" + user.getEmail()))
-                .body(userMapper.toResponse(user));
+            @ApiResponse(responseCode = "409", description = "Email already exists") })
+    public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
+        var user = userService.createUser(request.name(), request.email(), request.role(), request.password());
+        return ResponseEntity.created(URI.create("/api/users/" + user.getEmail())).body(userMapper.toResponse(user));
     }
 }

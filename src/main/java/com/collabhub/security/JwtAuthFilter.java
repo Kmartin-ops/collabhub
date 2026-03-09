@@ -17,21 +17,17 @@ import java.io.IOException;
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtService             jwtService;
+    private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
 
-    public JwtAuthFilter(JwtService jwtService,
-                         UserDetailsServiceImpl userDetailsService) {
-        this.jwtService         = jwtService;
+    public JwtAuthFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
+        this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
     }
 
     @Override
-    protected void doFilterInternal(
-            @NonNull HttpServletRequest  request,
-            @NonNull HttpServletResponse response,
-            @NonNull FilterChain         filterChain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         // 1. Read Authorization header
         String authHeader = request.getHeader("Authorization");
@@ -47,15 +43,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // 4. Validate and populate security context
         if (jwtService.isTokenValid(token)) {
-            String      email       = jwtService.extractEmail(token);
+            String email = jwtService.extractEmail(token);
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-            UsernamePasswordAuthenticationToken authToken =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
+            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null,
+                    userDetails.getAuthorities());
 
-            authToken.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
             // 5. Tell Spring Security this request is authenticated
             SecurityContextHolder.getContext().setAuthentication(authToken);

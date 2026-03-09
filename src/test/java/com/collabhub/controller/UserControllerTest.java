@@ -55,8 +55,8 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        alice = new User("Alice", "alice@collabhub.com", "MANAGER");
-        bob   = new User("Bob",   "bob@collabhub.com",   "DEVELOPER");
+        alice = new User("Alice", "alice@collabhub.com", "MANAGER","password123!");
+        bob = new User("Bob", "bob@collabhub.com", "DEVELOPER","password123!");
     }
 
     // ── GET /api/users ────────────────────────────────────────
@@ -69,9 +69,7 @@ class UserControllerTest {
         void shouldReturn200WithUsers() throws Exception {
             when(userService.findAll()).thenReturn(List.of(alice, bob));
 
-            mockMvc.perform(get("/api/users"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(2)))
+            mockMvc.perform(get("/api/users")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)))
                     .andExpect(jsonPath("$[0].name").value("Alice"))
                     .andExpect(jsonPath("$[0].email").value("alice@collabhub.com"))
                     .andExpect(jsonPath("$[1].name").value("Bob"));
@@ -82,9 +80,7 @@ class UserControllerTest {
         void shouldReturnEmptyList() throws Exception {
             when(userService.findAll()).thenReturn(List.of());
 
-            mockMvc.perform(get("/api/users"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(0)));
+            mockMvc.perform(get("/api/users")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(0)));
         }
 
         @Test
@@ -92,8 +88,7 @@ class UserControllerTest {
         void shouldNotExposePassword() throws Exception {
             when(userService.findAll()).thenReturn(List.of(alice));
 
-            mockMvc.perform(get("/api/users"))
-                    .andExpect(status().isOk())
+            mockMvc.perform(get("/api/users")).andExpect(status().isOk())
                     .andExpect(jsonPath("$[0].password").doesNotExist());
         }
     }
@@ -108,10 +103,8 @@ class UserControllerTest {
         void shouldReturn200WhenFound() throws Exception {
             when(userService.getByEmail("alice@collabhub.com")).thenReturn(alice);
 
-            mockMvc.perform(get("/api/users/alice@collabhub.com"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.name").value("Alice"))
-                    .andExpect(jsonPath("$.role").value("MANAGER"));
+            mockMvc.perform(get("/api/users/alice@collabhub.com")).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.name").value("Alice")).andExpect(jsonPath("$.role").value("MANAGER"));
         }
 
         @Test
@@ -120,10 +113,8 @@ class UserControllerTest {
             when(userService.getByEmail(anyString()))
                     .thenThrow(new ResourceNotFoundException("User", "unknown@test.com"));
 
-            mockMvc.perform(get("/api/users/unknown@test.com"))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Not Found"))
+            mockMvc.perform(get("/api/users/unknown@test.com")).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.error").value("Not Found"))
                     .andExpect(jsonPath("$.path").value("/api/users/unknown@test.com"));
         }
     }
@@ -136,91 +127,64 @@ class UserControllerTest {
         @Test
         @DisplayName("should return 201 when user created successfully")
         void shouldReturn201OnSuccess() throws Exception {
-            when(userService.createUser("Alice", "alice@collabhub.com", "MANAGER"))
-                    .thenReturn(alice);
+            when(userService.createUser("Alice", "alice@collabhub.com", "MANAGER","password123!")).thenReturn(alice);
 
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "Alice",
-                                            "email", "alice@collabhub.com",
-                                            "role", "MANAGER"))))
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                            Map.of("name", "Alice", "email", "alice@collabhub.com", "role", "MANAGER","password","password123!"))))
                     .andExpect(status().isCreated())
-                    .andExpect(header().string("Location",
-                            containsString("/api/users/")))
+                    .andExpect(header().string("Location", containsString("/api/users/")))
                     .andExpect(jsonPath("$.name").value("Alice"));
         }
 
         @Test
         @DisplayName("should return 409 when email already exists")
         void shouldReturn409OnDuplicate() throws Exception {
-            when(userService.createUser(anyString(), anyString(), anyString()))
+            when(userService.createUser(anyString(), anyString(), anyString(),anyString()))
                     .thenThrow(new DuplicateResourceException("User", "alice@collabhub.com"));
 
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "Alice",
-                                            "email", "alice@collabhub.com",
-                                            "role", "MANAGER"))))
-                    .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.status").value(409));
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                            Map.of("name", "Alice", "email", "alice@collabhub.com", "role", "MANAGER","password","password123!"))))
+                    .andExpect(status().isConflict()).andExpect(jsonPath("$.status").value(409));
         }
 
         @Test
         @DisplayName("should return 400 when name is blank")
         void shouldReturn400WhenNameBlank() throws Exception {
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "",
-                                            "email", "alice@collabhub.com",
-                                            "role", "MANAGER"))))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.details[0]",
-                            containsString("Name is required")));
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper
+                            .writeValueAsString(Map.of("name", "", "email", "alice@collabhub.com", "role", "MANAGER"))))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.status").value(400))
+                    .andExpect(jsonPath("$.details[0]", containsString("Name is required")));
         }
 
         @Test
         @DisplayName("should return 400 when email is invalid")
         void shouldReturn400WhenEmailInvalid() throws Exception {
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "Alice",
-                                            "email", "not-an-email",
-                                            "role", "MANAGER"))))
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper
+                            .writeValueAsString(Map.of("name", "Alice", "email", "not-an-email", "role", "MANAGER"))))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.details[0]",
-                            containsString("valid email")));
+                    .andExpect(jsonPath("$.details[0]", containsString("valid email")));
         }
 
         @Test
         @DisplayName("should return 400 when role is invalid")
         void shouldReturn400WhenRoleInvalid() throws Exception {
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "Alice",
-                                            "email", "alice@collabhub.com",
-                                            "role", "INTERN"))))
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                            Map.of("name", "Alice", "email", "alice@collabhub.com", "role", "INTERN","password","password123!"))))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.details[0]",
-                            containsString("ADMIN, MANAGER, or DEVELOPER")));
+                    .andExpect(jsonPath("$.details[0]", containsString("ADMIN, MANAGER, or DEVELOPER")));
         }
 
         @Test
         @DisplayName("should return 400 with all errors when multiple fields invalid")
         void shouldReturnAllErrors() throws Exception {
-            mockMvc.perform(post("/api/users")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(
-                                    Map.of("name", "",
-                                            "email", "bad",
-                                            "role", "INTERN"))))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.details", hasSize(3)));
+            mockMvc.perform(post("/api/users").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(Map.of("name", "", "email", "bad", "role", "INTERN"))))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.details", hasSize(4)));
         }
     }
 }

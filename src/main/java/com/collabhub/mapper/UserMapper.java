@@ -11,10 +11,10 @@ import org.mapstruct.MappingConstants;
 public interface UserMapper {
 
     // Fields match by name — MapStruct maps automatically:
-    // User.id          → UserResponse.id
-    // User.name        → UserResponse.name
-    // User.email       → UserResponse.email
-    // User.role        → UserResponse.role
-    // User.createdAt   → UserResponse.createdAt
+    // User.id → UserResponse.id
+    // User.name → UserResponse.name
+    // User.email → UserResponse.email
+    // User.role → UserResponse.role
+    // User.createdAt → UserResponse.createdAt
     UserResponse toResponse(User user);
 }

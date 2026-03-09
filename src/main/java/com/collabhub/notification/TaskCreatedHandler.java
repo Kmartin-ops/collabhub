@@ -11,10 +11,7 @@ public final class TaskCreatedHandler extends StatusChangeHandler {
 
     @Override
     public void handle(Task task, User actor) {
-        notifier.notify(
-                actor.getName(),
-                "Task '" + task.getTitle() + "' was created in project: "
-                        + task.getProject().getName()
-        );
+        notifier.notify(actor.getName(),
+                "Task '" + task.getTitle() + "' was created in project: " + task.getProject().getName());
     }
 }

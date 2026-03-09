@@ -34,8 +34,8 @@ class ProjectRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        alice  = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER"));
-        bob    = em.persistAndFlush(user("Bob",   "bob@test.com",   "DEVELOPER"));
+        alice = em.persistAndFlush(user("Alice", "alice@test.com", "MANAGER","password123!"));
+        bob = em.persistAndFlush(user("Bob", "bob@test.com", "DEVELOPER","password123!"));
 
         mvp = new Project("CollabHub MVP", "Core platform");
         mvp.addMember(alice);
@@ -47,8 +47,8 @@ class ProjectRepositoryTest {
         mobile = em.persistAndFlush(mobile);
     }
 
-    private User user(String name, String email, String role) {
-        User user = new User(name, email, role);
+    private User user(String name, String email, String role,String passwordHash) {
+        User user = new User(name, email, role,passwordHash);
         user.setPasswordHash("test-password-hash");
         return user;
     }
@@ -79,8 +79,7 @@ class ProjectRepositoryTest {
         @Test
         @DisplayName("should load project with members")
         void shouldLoadWithMembers() {
-            Optional<Project> found =
-                    projectRepository.findByIdWithMembers(mvp.getId());
+            Optional<Project> found = projectRepository.findByIdWithMembers(mvp.getId());
 
             assertTrue(found.isPresent());
             assertEquals(2, found.get().getMembers().size());
@@ -89,8 +88,7 @@ class ProjectRepositoryTest {
         @Test
         @DisplayName("should return empty for unknown ID")
         void shouldReturnEmptyForUnknownId() {
-            Optional<Project> found =
-                    projectRepository.findByIdWithMembers(java.util.UUID.randomUUID());
+            Optional<Project> found = projectRepository.findByIdWithMembers(java.util.UUID.randomUUID());
             assertTrue(found.isEmpty());
         }
     }
@@ -117,8 +115,7 @@ class ProjectRepositoryTest {
         @Test
         @DisplayName("should return empty for user with no projects")
         void shouldReturnEmptyForNonMember() {
-            User carol = em.persistAndFlush(
-                    user("Carol", "carol@test.com", "DEVELOPER"));
+            User carol = em.persistAndFlush(user("Carol", "carol@test.com", "DEVELOPER","password123!"));
             List<Project> carolProjects = projectRepository.findByMember(carol);
             assertTrue(carolProjects.isEmpty());
         }

@@ -4,8 +4,7 @@ import com.collabhub.domain.Task;
 import com.collabhub.domain.User;
 
 // Sealed — only the listed classes can extend this
-public abstract sealed class StatusChangeHandler
-        permits TaskCreatedHandler, TaskAssignedHandler, TaskCompletedHandler {
+public abstract sealed class StatusChangeHandler permits TaskCreatedHandler, TaskAssignedHandler, TaskCompletedHandler {
 
     protected final Notifiable notifier;
 

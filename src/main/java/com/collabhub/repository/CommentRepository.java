@@ -23,10 +23,10 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
     // Recent comments across a whole project
     @Query("""
-        SELECT c FROM Comment c
-        JOIN FETCH c.author
-        WHERE c.task.project.id = :projectId
-        ORDER BY c.createdAt DESC
-        """)
+            SELECT c FROM Comment c
+            JOIN FETCH c.author
+            WHERE c.task.project.id = :projectId
+            ORDER BY c.createdAt DESC
+            """)
     List<Comment> findRecentByProjectId(@Param("projectId") UUID projectId);
 }

@@ -16,22 +16,10 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI collabHubOpenAPI() {
         return new OpenAPI()
-                .info(new Info()
-                        .title("CollabHub API")
-                        .description("Developer project and team management platform")
-                        .version("v0.2.0")
-                        .contact(new Contact()
-                                .name("CollabHub Team")
-                                .email("dev@collabhub.com"))
-                        .license(new License()
-                                .name("MIT")))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:8080")
-                                .description("Local development"),
-                        new Server()
-                                .url("https://api.collabhub.com")
-                                .description("Production")
-                ));
+                .info(new Info().title("CollabHub API").description("Developer project and team management platform")
+                        .version("v0.2.0").contact(new Contact().name("CollabHub Team").email("dev@collabhub.com"))
+                        .license(new License().name("MIT")))
+                .servers(List.of(new Server().url("http://localhost:8080").description("Local development"),
+                        new Server().url("https://api.collabhub.com").description("Production")));
     }
 }

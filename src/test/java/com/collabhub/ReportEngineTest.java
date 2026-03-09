@@ -34,20 +34,20 @@ class ReportEngineTest {
 
     @BeforeEach
     void setUp() {
-        alice   = new User("Alice", "alice@test.com", "MANAGER");
-        bob     = new User("Bob",   "bob@test.com",   "DEVELOPER");
-        carol   = new User("Carol", "carol@test.com", "DEVELOPER");
+        alice = new User("Alice", "alice@test.com", "MANAGER","password123!");
+        bob = new User("Bob", "bob@test.com", "DEVELOPER","password123!");
+        carol = new User("Carol", "carol@test.com", "DEVELOPER","password123!");
         project = new Project("Test", "desc");
 
-        t1 = new Task("Task 1", "HIGH",   LocalDate.now().plusDays(1),  project);
-        t2 = new Task("Task 2", "MEDIUM", LocalDate.now().plusDays(3),  project);
-        t3 = new Task("Task 3", "HIGH",   LocalDate.now().minusDays(1), project);
-        t4 = new Task("Task 4", "LOW",    LocalDate.now().plusDays(5),  project);
-        t5 = new Task("Task 5", "MEDIUM", LocalDate.now().plusDays(2),  project);
+        t1 = new Task("Task 1", "HIGH", LocalDate.now().plusDays(1), project);
+        t2 = new Task("Task 2", "MEDIUM", LocalDate.now().plusDays(3), project);
+        t3 = new Task("Task 3", "HIGH", LocalDate.now().minusDays(1), project);
+        t4 = new Task("Task 4", "LOW", LocalDate.now().plusDays(5), project);
+        t5 = new Task("Task 5", "MEDIUM", LocalDate.now().plusDays(2), project);
 
         t1.setAssignee(bob);
         t2.setAssignee(bob);
-        t3.setAssignee(bob);   // overdue, bob's
+        t3.setAssignee(bob); // overdue, bob's
         t4.setAssignee(carol);
         t5.setAssignee(carol);
 
@@ -95,10 +95,8 @@ class ReportEngineTest {
         List<Task> urgent = reportEngine.topUrgentTasks(2);
 
         assertEquals(2, urgent.size());
-        assertTrue(urgent.get(0).getDueDate()
-                .isBefore(urgent.get(1).getDueDate())
-                || urgent.get(0).getDueDate()
-                .isEqual(urgent.get(1).getDueDate()));
+        assertTrue(urgent.get(0).getDueDate().isBefore(urgent.get(1).getDueDate())
+                || urgent.get(0).getDueDate().isEqual(urgent.get(1).getDueDate()));
     }
 
     @Test
@@ -106,9 +104,7 @@ class ReportEngineTest {
     void shouldGenerateAssigneeSummary() {
         List<TaskSummary> summaries = reportEngine.generateAssigneeSummary();
 
-        TaskSummary bobSummary = summaries.stream()
-                .filter(s -> s.assigneeName().equals("Bob"))
-                .findFirst()
+        TaskSummary bobSummary = summaries.stream().filter(s -> s.assigneeName().equals("Bob")).findFirst()
                 .orElseThrow();
 
         assertEquals(3, bobSummary.totalTasks());

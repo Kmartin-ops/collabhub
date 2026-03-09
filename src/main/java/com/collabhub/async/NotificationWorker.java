@@ -13,9 +13,7 @@ public class NotificationWorker implements Runnable {
     // volatile — ensures changes to this flag are visible across threads
     private volatile boolean running = true;
 
-    public NotificationWorker(BlockingQueue<NotificationEvent> queue,
-                              Notifiable notifier,
-                              String workerName) {
+    public NotificationWorker(BlockingQueue<NotificationEvent> queue, Notifiable notifier, String workerName) {
         this.queue = queue;
         this.notifier = notifier;
         this.workerName = workerName;
@@ -23,8 +21,7 @@ public class NotificationWorker implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("[" + workerName + "] Started on thread: "
-                + Thread.currentThread());
+        System.out.println("[" + workerName + "] Started on thread: " + Thread.currentThread());
 
         while (running) {
             try {
@@ -59,8 +56,7 @@ public class NotificationWorker implements Runnable {
         }
 
         notifier.notify(event.recipient(), event.message());
-        System.out.println("[" + workerName + "] Processed event: "
-                + event.eventType() + " | id=" + event.eventId());
+        System.out.println("[" + workerName + "] Processed event: " + event.eventType() + " | id=" + event.eventId());
     }
 
     public void stop() {

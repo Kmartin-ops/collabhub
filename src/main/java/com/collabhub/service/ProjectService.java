@@ -17,7 +17,7 @@ import java.util.UUID;
 @Service
 public class ProjectService {
 
-    private static final Logger log = LoggerFactory.getLogger(ProjectService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProjectService.class);
 
     private final ProjectRepository projectRepository;
 
@@ -27,41 +27,45 @@ public class ProjectService {
 
     @Transactional
     @CacheEvict(value = "projects", allEntries = true)
+    public void addMember(Project project, User user) {
+        LOG.debug("Adding member '{}' to project '{}'", user.getEmail(), project.getName());
+        // Re-fetch within this transaction to get a managed entity with members loaded
+        Project managed = projectRepository.findByIdWithMembers(project.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Project", project.getId()));
+        if (managed.getMembers().contains(user)) {
+            LOG.warn("User {} already a member of '{}' — skipping", user.getEmail(), project.getName());
+            return;
+        }
+        managed.addMember(user);
+        projectRepository.save(managed);
+        LOG.info("Member added: user={} project={}", user.getEmail(), project.getId());
+    }
+    @Transactional
+    @CacheEvict(value = "projects", allEntries = true)
     public Project createProject(String name, String description, User createdBy) {
-        log.debug("Creating project '{}' for user '{}'", name, createdBy.getEmail());
+        LOG.debug("Creating project '{}' for user '{}'", name, createdBy.getEmail());
         Project project = new Project(name, description);
         project.addMember(createdBy);
         Project saved = projectRepository.save(project);
-        log.info("Project created: '{}' id={} by={}",
-                name, saved.getId(), createdBy.getEmail());
+        LOG.info("Project created: '{}' id={} by={}", name, saved.getId(), createdBy.getEmail());
         return saved;
     }
 
     @Transactional(readOnly = true)
     public Project getById(UUID id) {
-        log.debug("Fetching project id={}", id);
-        return projectRepository.findByIdWithMembers(id)
-                .orElseThrow(() -> {
-                    log.warn("Project not found: id={}", id);
-                    return new ResourceNotFoundException("Project", id);
-                });
+        LOG.debug("Fetching project id={}", id);
+        return projectRepository.findByIdWithMembers(id).orElseThrow(() -> {
+            LOG.warn("Project not found: id={}", id);
+            return new ResourceNotFoundException("Project", id);
+        });
     }
 
-    @Transactional
-    @CacheEvict(value = "projects", allEntries = true)
-    public void addMember(Project project, User user) {
-        log.debug("Adding member '{}' to project '{}'",
-                user.getEmail(), project.getName());
-        project.addMember(user);
-        projectRepository.save(project);
-        log.info("Member added: user={} project={}",
-                user.getEmail(), project.getId());
-    }
+
 
     @Transactional(readOnly = true)
     @Cacheable("projects")
     public List<Project> getAllProjects() {
-        log.debug("Fetching all projects");
+        LOG.debug("Fetching all projects");
         return projectRepository.findAll();
     }
 
@@ -72,30 +76,34 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public List<Project> findByMember(User user) {
-        log.debug("Finding projects for member '{}'", user.getEmail());
+        LOG.debug("Finding projects for member '{}'", user.getEmail());
         return projectRepository.findByMember(user);
     }
 
     @Transactional
     @CacheEvict(value = "projects", allEntries = true)
-    public Project updateProject(Project project, String name,
-                                 String description, String status) {
-        log.debug("Updating project id={}", project.getId());
-        if (name        != null) project.setName(name);
-        if (description != null) project.setDescription(description);
-        if (status      != null) project.setStatus(status);
+    public Project updateProject(Project project, String name, String description, String status) {
+        LOG.debug("Updating project id={}", project.getId());
+        if (name != null) {
+            project.setName(name);
+        }
+        if (description != null) {
+            project.setDescription(description);
+        }
+        if (status != null) {
+            project.setStatus(status);
+        }
         Project saved = projectRepository.save(project);
-        log.info("Project updated: id={} name='{}' status={}",
-                saved.getId(), saved.getName(), saved.getStatus());
+        LOG.info("Project updated: id={} name='{}' status={}", saved.getId(), saved.getName(), saved.getStatus());
         return saved;
     }
 
     @Transactional
     @CacheEvict(value = "projects", allEntries = true)
     public void deleteProject(UUID id) {
-        log.debug("Deleting project id={}", id);
+        LOG.debug("Deleting project id={}", id);
         Project project = getById(id);
         projectRepository.delete(project);
-        log.info("Project deleted: id={}", id);
+        LOG.info("Project deleted: id={}", id);
     }
 }

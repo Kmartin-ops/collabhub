@@ -62,16 +62,15 @@ class ProjectControllerTest {
 
     @BeforeEach
     void setUp() {
-        alice = new User("Alice", "alice@test.com", "MANAGER");
-        bob   = new User("Bob",   "bob@test.com",   "DEVELOPER");
+        alice = new User("Alice", "alice@test.com", "MANAGER","password123!");
+        bob = new User("Bob", "bob@test.com", "DEVELOPER","password123!");
 
         mvp = new Project("CollabHub MVP", "Core platform");
         mvp.setId(UUID.randomUUID());
         mvp.addMember(alice);
         mvp.addMember(bob);
 
-        when(projectService.getById(mvp.getId()))
-                .thenReturn(mvp);
+        when(projectService.getById(mvp.getId())).thenReturn(mvp);
     }
 
     // ── GET /api/projects ─────────────────────────────────────
@@ -84,9 +83,7 @@ class ProjectControllerTest {
         void shouldReturn200WithProjects() throws Exception {
             when(projectService.getAllProjects()).thenReturn(List.of(mvp));
 
-            mockMvc.perform(get("/api/projects"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
+            mockMvc.perform(get("/api/projects")).andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)))
                     .andExpect(jsonPath("$[0].name").value("CollabHub MVP"))
                     .andExpect(jsonPath("$[0].status").value("ACTIVE"))
                     .andExpect(jsonPath("$[0].memberCount").value(2));
@@ -99,10 +96,8 @@ class ProjectControllerTest {
             archived.setStatus("ARCHIVED");
             when(projectService.getAllProjects()).thenReturn(List.of(mvp, archived));
 
-            mockMvc.perform(get("/api/projects?status=ACTIVE"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(1)))
-                    .andExpect(jsonPath("$[0].name").value("CollabHub MVP"));
+            mockMvc.perform(get("/api/projects?status=ACTIVE")).andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(1))).andExpect(jsonPath("$[0].name").value("CollabHub MVP"));
         }
     }
 
@@ -116,8 +111,7 @@ class ProjectControllerTest {
         void shouldReturn200WhenFound() throws Exception {
             when(projectService.getById(mvp.getId())).thenReturn(mvp);
 
-            mockMvc.perform(get("/api/projects/" + mvp.getId()))
-                    .andExpect(status().isOk())
+            mockMvc.perform(get("/api/projects/" + mvp.getId())).andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("CollabHub MVP"));
         }
 
@@ -125,20 +119,16 @@ class ProjectControllerTest {
         @DisplayName("should return 404 when project not found")
         void shouldReturn404WhenNotFound() throws Exception {
             UUID randomId = UUID.randomUUID();
-            when(projectService.getById(randomId))
-                    .thenThrow(new ResourceNotFoundException("Project", randomId));
+            when(projectService.getById(randomId)).thenThrow(new ResourceNotFoundException("Project", randomId));
 
-            mockMvc.perform(get("/api/projects/" + randomId))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.status").value(404))
-                    .andExpect(jsonPath("$.error").value("Not Found"));
+            mockMvc.perform(get("/api/projects/" + randomId)).andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.status").value(404)).andExpect(jsonPath("$.error").value("Not Found"));
         }
 
         @Test
         @DisplayName("should return 400 for invalid UUID format")
         void shouldReturn400ForInvalidUUID() throws Exception {
-            mockMvc.perform(get("/api/projects/not-a-uuid"))
-                    .andExpect(status().isBadRequest())
+            mockMvc.perform(get("/api/projects/not-a-uuid")).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400));
         }
     }
@@ -152,19 +142,14 @@ class ProjectControllerTest {
         @DisplayName("should return 201 when project created")
         void shouldReturn201OnSuccess() throws Exception {
             when(userService.getByEmail("alice@collabhub.com")).thenReturn(alice);
-            when(projectService.createProject(anyString(), anyString(), any()))
-                    .thenReturn(mvp);
+            when(projectService.createProject(anyString(), anyString(), any())).thenReturn(mvp);
 
-            mockMvc.perform(post("/api/projects")
-                            .with(user("alice@collabhub.com").roles("MANAGER"))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(Map.of(
-                                    "name",         "CollabHub MVP",
-                                    "description",  "Core platform",
-                                    "creatorEmail", "alice@collabhub.com"))))
+            mockMvc.perform(post("/api/projects").with(user("alice@collabhub.com").roles("MANAGER"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(Map.of("name", "CollabHub MVP", "description",
+                            "Core platform", "creatorEmail", "alice@collabhub.com"))))
                     .andExpect(status().isCreated())
-                    .andExpect(header().string("Location",
-                            containsString("/api/projects/")))
+                    .andExpect(header().string("Location", containsString("/api/projects/")))
                     .andExpect(jsonPath("$.name").value("CollabHub MVP"));
         }
 
@@ -174,36 +159,27 @@ class ProjectControllerTest {
             when(userService.getByEmail(anyString()))
                     .thenThrow(new ResourceNotFoundException("User", "unknown@test.com"));
 
-            mockMvc.perform(post("/api/projects")
-                            .with(user("alice@collabhub.com").roles("MANAGER"))
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(Map.of(
-                                    "name",         "Test Project",
-                                    "description",  "desc",
-                                    "creatorEmail", "unknown@test.com"))))
+            mockMvc.perform(post("/api/projects").with(user("alice@collabhub.com").roles("MANAGER"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                            Map.of("name", "Test Project", "description", "desc", "creatorEmail", "unknown@test.com"))))
                     .andExpect(status().isNotFound());
         }
 
         @Test
         @DisplayName("should return 400 when name is too short")
         void shouldReturn400WhenNameTooShort() throws Exception {
-            mockMvc.perform(post("/api/projects")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(Map.of(
-                                    "name",         "AB",
-                                    "description",  "desc",
-                                    "creatorEmail", "alice@collabhub.com"))))
+            mockMvc.perform(post("/api/projects").contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(
+                            Map.of("name", "AB", "description", "desc", "creatorEmail", "alice@collabhub.com"))))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.details[0]",
-                            containsString("3 and 100 characters")));
+                    .andExpect(jsonPath("$.details[0]", containsString("3 and 100 characters")));
         }
 
         @Test
         @DisplayName("should return 400 when required fields missing")
         void shouldReturn400WhenFieldsMissing() throws Exception {
-            mockMvc.perform(post("/api/projects")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("{}"))
+            mockMvc.perform(post("/api/projects").contentType(MediaType.APPLICATION_JSON).content("{}"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.details", hasSize(greaterThanOrEqualTo(2))));
         }
@@ -217,20 +193,17 @@ class ProjectControllerTest {
         @Test
         @DisplayName("should return 204 on successful delete")
         void shouldReturn204OnDelete() throws Exception {
-            mockMvc.perform(delete("/api/projects/" + mvp.getId()))
-                    .andExpect(status().isNoContent());
+            mockMvc.perform(delete("/api/projects/" + mvp.getId())).andExpect(status().isNoContent());
         }
 
         @Test
         @DisplayName("should return 404 when project not found")
         void shouldReturn404WhenNotFound() throws Exception {
             UUID randomId = UUID.randomUUID();
-            org.mockito.Mockito.doThrow(
-                            new ResourceNotFoundException("Project", randomId))
-                    .when(projectService).deleteProject(randomId);
+            org.mockito.Mockito.doThrow(new ResourceNotFoundException("Project", randomId)).when(projectService)
+                    .deleteProject(randomId);
 
-            mockMvc.perform(delete("/api/projects/" + randomId))
-                    .andExpect(status().isNotFound());
+            mockMvc.perform(delete("/api/projects/" + randomId)).andExpect(status().isNotFound());
         }
     }
 }

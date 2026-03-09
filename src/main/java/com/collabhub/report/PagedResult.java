@@ -6,9 +6,9 @@ import java.util.List;
 
 public class PagedResult<T extends BaseEntity> {
 
-    private final List<T> content;   // the items on this page
-    private final int page;          // current page number (0-based)
-    private final int pageSize;      // items per page
+    private final List<T> content; // the items on this page
+    private final int page; // current page number (0-based)
+    private final int pageSize; // items per page
     private final long totalElements; // total items across all pages
 
     public PagedResult(List<T> content, int page, int pageSize, long totalElements) {
@@ -32,15 +32,25 @@ public class PagedResult<T extends BaseEntity> {
     }
 
     // Getters
-    public List<T> getContent() { return content; }
-    public int getPage() { return page; }
-    public int getPageSize() { return pageSize; }
-    public long getTotalElements() { return totalElements; }
+    public List<T> getContent() {
+        return content;
+    }
+
+    public int getPage() {
+        return page;
+    }
+
+    public int getPageSize() {
+        return pageSize;
+    }
+
+    public long getTotalElements() {
+        return totalElements;
+    }
 
     @Override
     public String toString() {
-        return "PagedResult{page=" + page + "/" + (getTotalPages() - 1) +
-                ", size=" + content.size() +
-                ", total=" + totalElements + "}";
+        return "PagedResult{page=" + page + "/" + (getTotalPages() - 1) + ", size=" + content.size() + ", total="
+                + totalElements + "}";
     }
 }

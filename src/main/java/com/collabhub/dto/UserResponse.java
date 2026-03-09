@@ -7,18 +7,13 @@ import java.util.UUID;
 @Schema(description = "User data returned by the API")
 public record UserResponse(
 
-        @Schema(description = "Unique identifier")
-        UUID id,
+        @Schema(description = "Unique identifier") UUID id,
 
-        @Schema(description = "Full name", example = "Alice Smith")
-        String name,
+        @Schema(description = "Full name", example = "Alice Smith") String name,
 
-        @Schema(description = "Email address", example = "alice@collabhub.com")
-        String email,
+        @Schema(description = "Email address", example = "alice@collabhub.com") String email,
 
-        @Schema(description = "Role", example = "MANAGER")
-        String role,
+        @Schema(description = "Role", example = "MANAGER") String role,
 
-        @Schema(description = "Creation timestamp")
-        LocalDateTime createdAt
-) {}
+        @Schema(description = "Creation timestamp") LocalDateTime createdAt) {
+}

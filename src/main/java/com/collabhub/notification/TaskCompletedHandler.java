@@ -11,9 +11,6 @@ public final class TaskCompletedHandler extends StatusChangeHandler {
 
     @Override
     public void handle(Task task, User actor) {
-        notifier.notify(
-                actor.getName(),
-                "🎉 Task '" + task.getTitle() + "' has been marked DONE!"
-        );
+        notifier.notify(actor.getName(), "🎉 Task '" + task.getTitle() + "' has been marked DONE!");
     }
 }

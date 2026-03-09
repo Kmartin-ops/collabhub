@@ -1,6 +1,8 @@
 package com.collabhub.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import java.util.Objects;
 
 @Entity
@@ -17,33 +19,56 @@ public class User extends BaseEntity {
     private String role;
 
     // JPA requires a no-arg constructor
-    protected User() {}
-
-    public User(String name, String email, String role) {
-        super();
-        this.name  = name;
-        this.email = email;
-        this.role  = role;
+    protected User() {
     }
+
+    public User(String name, String email, String role, String passwordHash) {
+        super();
+        this.name = name;
+        this.email = email;
+        this.role = role;
+        this.passwordHash = passwordHash;
+    }
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    public String getPasswordHash() { return passwordHash; }
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
     public void setPasswordHash(String passwordHash) {
         this.passwordHash = passwordHash;
     }
 
-    public String getName()  { return name; }
-    public String getEmail() { return email; }
-    public String getRole()  { return role; }
+    public String getName() {
+        return name;
+    }
 
-    public void setName(String name)   { this.name = name; }
-    public void setRole(String role)   { this.role = role; }
+    public String getEmail() {
+        return email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof User other)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof User other)) {
+            return false;
+        }
         return Objects.equals(email, other.email);
     }
 
@@ -54,9 +79,7 @@ public class User extends BaseEntity {
 
     @Override
     public String toString() {
-        return "User{" + super.toString()
-                + ", name='" + name + '\''
-                + ", email='" + email + '\''
-                + ", role='" + role + '\'' + '}';
+        return "User{" + super.toString() + ", name='" + name + '\'' + ", email='" + email + '\'' + ", role='" + role
+                + '\'' + '}';
     }
 }

@@ -15,10 +15,8 @@ public class TaskAuthService {
     }
 
     // Returns true if the given email is the assignee of the task
-    public boolean isAssignee(UUID taskId, String email){
+    public boolean isAssignee(UUID taskId, String email) {
         return taskRepository.findById(taskId)
-                .map(task -> task.getAssignee() !=null
-                && task.getAssignee().getEmail().equals(email))
-                .orElse(false);
+                .map(task -> task.getAssignee() != null && task.getAssignee().getEmail().equals(email)).orElse(false);
     }
 }

@@ -15,17 +15,18 @@ public class OAuth2UserServiceImpl extends DefaultOAuth2UserService {
     public OAuth2UserServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
+
     @Override
-    public OAuth2User loadUser(OAuth2UserRequest request)throws OAuth2AuthenticationException{
+    public OAuth2User loadUser(OAuth2UserRequest request) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(request);
         String email = oAuth2User.getAttribute("email");
         String name = oAuth2User.getAttribute("name");
         // Find existing user or create a new with DEVELOPER role
-        userRepository.findByEmail(email).orElseGet(()->{
-                User newUSer = new User(name,email,"DEVELOPER");
-        newUSer.setPasswordHash("OAUTH@_NO_PASSWORD");
-        return userRepository.save(newUSer);
-        } );
-         return oAuth2User;
+        userRepository.findByEmail(email).orElseGet(() -> {
+            User newUSer = new User(name, email, "DEVELOPER", "OAUTH@_NO_PASSWORD");
+            return userRepository.save(newUSer);
+        });
+        return oAuth2User;
     }
 }
+

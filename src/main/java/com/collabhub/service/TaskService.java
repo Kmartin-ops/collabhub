@@ -6,7 +6,11 @@ import com.collabhub.domain.Project;
 import com.collabhub.domain.Task;
 import com.collabhub.domain.User;
 import com.collabhub.exception.ResourceNotFoundException;
-import com.collabhub.notification.*;
+import com.collabhub.notification.Notifiable;
+import com.collabhub.notification.StatusChangeHandler;
+import com.collabhub.notification.TaskAssignedHandler;
+import com.collabhub.notification.TaskCompletedHandler;
+import com.collabhub.notification.TaskCreatedHandler;
 import com.collabhub.repository.TaskRepository;
 import com.collabhub.repository.TaskSpecification;
 import org.slf4j.Logger;
@@ -23,15 +27,15 @@ import java.util.UUID;
 @Service
 public class TaskService {
 
-    private static final Logger log = LoggerFactory.getLogger(TaskService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
 
-    private final TaskRepository   taskRepository;
-    private final Notifiable       notifier;
+    private final TaskRepository taskRepository;
+    private final Notifiable notifier;
     private NotificationDispatcher dispatcher;
 
     public TaskService(TaskRepository taskRepository, Notifiable notifier) {
         this.taskRepository = taskRepository;
-        this.notifier       = notifier;
+        this.notifier = notifier;
     }
 
     public void setDispatcher(NotificationDispatcher dispatcher) {
@@ -39,37 +43,26 @@ public class TaskService {
     }
 
     @Transactional
-    public Task createTask(String title, String priority, LocalDate dueDate,
-                           Project project, User createdBy) {
-        log.debug("Creating task '{}' priority={} project={}",
-                title, priority, project.getId());
+    public Task createTask(String title, String priority, LocalDate dueDate, Project project, User createdBy) {
+        LOG.debug("Creating task '{}' priority={} project={}", title, priority, project.getId());
         Task task = new Task(title, priority, dueDate, project);
         Task saved = taskRepository.save(task);
-        log.info("Task created: '{}' id={} project={}",
-                title, saved.getId(), project.getId());
+        LOG.info("Task created: '{}' id={} project={}", title, saved.getId(), project.getId());
         dispatchOrNotify(
                 NotificationEvent.of(createdBy.getName(),
-                        "Task '" + saved.getTitle() + "' created in "
-                                + project.getName(), "TASK_CREATED"),
-                saved, createdBy, new TaskCreatedHandler(notifier)
-        );
+                        "Task '" + saved.getTitle() + "' created in " + project.getName(), "TASK_CREATED"),
+                saved, createdBy, new TaskCreatedHandler(notifier));
         return saved;
     }
 
     @Transactional
     public void assignTask(Task task, User assignee, User assignedBy) {
-        log.debug("Assigning task id={} to user={}",
-                task.getId(), assignee.getEmail());
+        LOG.debug("Assigning task id={} to user={}", task.getId(), assignee.getEmail());
         task.setAssignee(assignee);
         taskRepository.save(task);
-        log.info("Task assigned: id={} assignee={} by={}",
-                task.getId(), assignee.getEmail(), assignedBy.getEmail());
-        dispatchOrNotify(
-                NotificationEvent.of(assignee.getName(),
-                        "You were assigned: '" + task.getTitle() + "'",
-                        "TASK_ASSIGNED"),
-                task, assignedBy, new TaskAssignedHandler(notifier)
-        );
+        LOG.info("Task assigned: id={} assignee={} by={}", task.getId(), assignee.getEmail(), assignedBy.getEmail());
+        dispatchOrNotify(NotificationEvent.of(assignee.getName(), "You were assigned: '" + task.getTitle() + "'",
+                "TASK_ASSIGNED"), task, assignedBy, new TaskAssignedHandler(notifier));
     }
 
     @Transactional
@@ -77,35 +70,28 @@ public class TaskService {
         String oldStatus = task.getStatus();
         task.setStatus(newStatus);
         taskRepository.save(task);
-        log.info("Task status changed: '{}' {}→{} by={}",
-                task.getTitle(), oldStatus, newStatus, changedBy.getEmail());
+        LOG.info("Task status changed: '{}' {}→{} by={}", task.getTitle(), oldStatus, newStatus, changedBy.getEmail());
         if ("DONE".equals(newStatus)) {
-            dispatchOrNotify(
-                    NotificationEvent.of(changedBy.getName(),
-                            "🎉 '" + task.getTitle() + "' is DONE!",
-                            "TASK_COMPLETED"),
-                    task, changedBy, new TaskCompletedHandler(notifier)
-            );
+            dispatchOrNotify(NotificationEvent.of(changedBy.getName(), "🎉 '" + task.getTitle() + "' is DONE!",
+                    "TASK_COMPLETED"), task, changedBy, new TaskCompletedHandler(notifier));
         }
     }
 
     @Transactional(readOnly = true)
     public Task getById(UUID id) {
-        return taskRepository.findById(id)
-                .orElseThrow(() -> {
-                    log.warn("Task not found: id={}", id);
-                    return new ResourceNotFoundException("Task", id);
-                });
+        return taskRepository.findById(id).orElseThrow(() -> {
+            LOG.warn("Task not found: id={}", id);
+            return new ResourceNotFoundException("Task", id);
+        });
     }
+
     // ── Paginated + filtered search ───────────────────────────
     @Transactional(readOnly = true)
-    public Page<Task> search(String status, String priority,
-                             UUID projectId, UUID assigneeId,
-                             String keyword, Pageable pageable) {
-        log.debug("Searching tasks: status={} priority={} projectId={} keyword={}",
-                status, priority, projectId, keyword);
-        var spec = TaskSpecification.withFilters(
-                status, priority, projectId, assigneeId, keyword);
+    public Page<Task> search(String status, String priority, UUID projectId, UUID assigneeId, String keyword,
+            Pageable pageable) {
+        LOG.debug("Searching tasks: status={} priority={} projectId={} keyword={}", status, priority, projectId,
+                keyword);
+        var spec = TaskSpecification.withFilters(status, priority, projectId, assigneeId, keyword);
         return taskRepository.findAll(spec, pageable);
     }
 
@@ -126,8 +112,7 @@ public class TaskService {
 
     @Transactional(readOnly = true)
     public List<Task> findOverdue() {
-        return taskRepository.findByDueDateBeforeAndStatusNot(
-                LocalDate.now(), "DONE");
+        return taskRepository.findByDueDateBeforeAndStatusNot(LocalDate.now(), "DONE");
     }
 
     @Transactional(readOnly = true)
@@ -135,8 +120,7 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
-    private void dispatchOrNotify(NotificationEvent event, Task task,
-                                  User actor, StatusChangeHandler handler) {
+    private void dispatchOrNotify(NotificationEvent event, Task task, User actor, StatusChangeHandler handler) {
         if (dispatcher != null) {
             dispatcher.dispatch(event);
         } else {
@@ -146,9 +130,9 @@ public class TaskService {
 
     @Transactional
     public void deleteTask(UUID id) {
-        log.debug("Deleting task id={}", id);
+        LOG.debug("Deleting task id={}", id);
         Task task = getById(id);
         taskRepository.delete(task);
-        log.info("Task deleted: id={}", id);
+        LOG.info("Task deleted: id={}", id);
     }
 }
