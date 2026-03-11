@@ -25,6 +25,9 @@
         <spotbugs.version>4.8.3.1</spotbugs.version>
         <surefire.version>3.2.5</surefire.version>
         <failsafe.version>3.2.5</failsafe.version>
+        <sonar.projectKey>MyIntelliJApp</sonar.projectKey>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
     <dependencies>
@@ -326,6 +329,12 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- SonarScanner for Maven (valid public version) -->
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+                <version>5.5.0.6356</version>
             </plugin>
 
         </plugins>

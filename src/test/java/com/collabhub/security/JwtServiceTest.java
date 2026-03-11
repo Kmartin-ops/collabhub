@@ -102,8 +102,13 @@ class JwtServiceTest {
     void shouldRejectTamperedToken() {
         String token = jwtService.generateToken("bob@collabhub.com", "DEVELOPER");
 
-        // Tamper by changing last character
-        String tampered = token.substring(0, token.length() - 1) + (token.endsWith("a") ? "b" : "a");
+        // Tamper the payload segment to ensure the signature no longer matches.
+        String[] parts = token.split("\\.");
+        char[] payloadChars = parts[1].toCharArray();
+        int idx = payloadChars.length / 2;
+        payloadChars[idx] = payloadChars[idx] == 'a' ? 'b' : 'a';
+        parts[1] = new String(payloadChars);
+        String tampered = String.join(".", parts);
 
         assertThat(jwtService.isTokenValid(tampered)).isFalse();
     }

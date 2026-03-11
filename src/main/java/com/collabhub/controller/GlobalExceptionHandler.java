@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAll(Exception ex, HttpServletRequest request) {
 
         // Log the real error server-side, never expose internals to client
-        System.err.println("[ERROR] Unhandled exception: " + ex.getMessage());
+        LOG.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse.of(500,
                 "Internal Server Error", request.getRequestURI(), "An unexpected error occurred"));
