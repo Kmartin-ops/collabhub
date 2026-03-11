@@ -28,6 +28,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableMethodSecurity
 public class SecurityConfig {
 
+    private static final String ROLE_MANAGER = "MANAGER";
+
     private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsServiceImpl userDetailsService;
     private final OAuth2UserServiceImpl oAuth2UserService;
@@ -35,8 +37,8 @@ public class SecurityConfig {
     private final CorsConfigurationSource corsConfigurationSource;
 
     public SecurityConfig(JwtAuthFilter jwtAuthFilter, UserDetailsServiceImpl userDetailsService,
-            OAuth2UserServiceImpl oAuth2UserService, OAuth2SuccessHandler oAuth2SuccessHandler,
-            CorsConfigurationSource corsConfigurationSource) {
+                          OAuth2UserServiceImpl oAuth2UserService, OAuth2SuccessHandler oAuth2SuccessHandler,
+                          CorsConfigurationSource corsConfigurationSource) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.userDetailsService = userDetailsService;
         this.oAuth2UserService = oAuth2UserService;
@@ -46,23 +48,33 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable).cors(cors -> cors.configurationSource(corsConfigurationSource))
+        http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(s -> s
-                        // OAuth2 needs a session briefly during the redirect flow
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                .authorizeHttpRequests(auth -> auth.requestMatchers("/auth/**", "/login/oauth2/**", // Google redirect
-                                                                                                    // URI
-                        "/oauth2/**", // OAuth2 initiation
-                                "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**", "/actuator/health",
-                                "/health", "/info").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole("MANAGER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasRole("MANAGER")
-                        .requestMatchers(HttpMethod.POST, "/api/projects").hasRole("MANAGER").anyRequest()
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)) // OAuth2 needs a session briefly
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/auth/**",
+                                "/login/oauth2/**", // Google redirect URI
+                                "/oauth2/**",       // OAuth2 initiation
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/actuator/health",
+                                "/health",
+                                "/info")
+                        .permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole(ROLE_MANAGER)
+                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasRole(ROLE_MANAGER)
+                        .requestMatchers(HttpMethod.POST, "/api/projects").hasRole(ROLE_MANAGER)
+                        .anyRequest()
                         .authenticated())
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(
                         (request, response, authException) -> response.sendError(HttpServletResponse.SC_UNAUTHORIZED)))
-                .oauth2Login(oauth2 -> oauth2.redirectionEndpoint(r -> r.baseUri("/auth/oauth2/callback/*"))
-                        .userInfoEndpoint(u -> u.userService(oAuth2UserService)).successHandler(oAuth2SuccessHandler))
+                .oauth2Login(oauth2 -> oauth2
+                        .redirectionEndpoint(r -> r.baseUri("/auth/oauth2/callback/*"))
+                        .userInfoEndpoint(u -> u.userService(oAuth2UserService))
+                        .successHandler(oAuth2SuccessHandler))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

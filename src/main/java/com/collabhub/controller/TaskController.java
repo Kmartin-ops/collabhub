@@ -51,11 +51,10 @@ public class TaskController {
         this.taskMapper = taskMapper;
     }
 
-    // GET /api/tasks?status=IN_PROGRESS&priority=HIGH&keyword=login&page=0&size=20
+
     @GetMapping
     @Operation(summary = "Search tasks with filters and pagination", description = "Filter by status, priority, projectId, assigneeId, or keyword. "
             + "Sort with sort=dueDate,asc. Page with page=0&size=20.")
-    @ApiResponse(responseCode = "200", description = "Paginated task results")
     public PagedResponse<TaskResponse> searchTasks(
 
             @Parameter(description = "Filter by status") @RequestParam(required = false) String status,
@@ -68,7 +67,7 @@ public class TaskController {
 
             @Parameter(description = "Search in title") @RequestParam(required = false) String keyword,
 
-            // Default: page 0, 20 per page, sorted by dueDate ascending
+
             @PageableDefault(size = 20, sort = "dueDate", direction = Sort.Direction.ASC) Pageable pageable) {
 
         var page = taskService.search(status, priority, projectId, assigneeId, keyword, pageable);
@@ -79,23 +78,19 @@ public class TaskController {
                 .from(new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements()));
     }
 
-    // GET /api/tasks/{id}
-    @GetMapping("/{id}")
-    @Operation(summary = "Get task by ID")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Task found"),
-            @ApiResponse(responseCode = "404", description = "Task not found") })
+
     public TaskResponse getById(@PathVariable UUID id) {
         return taskMapper.toResponse(taskService.getById(id));
     }
 
-    // GET /api/tasks/overdue
+
     @GetMapping("/overdue")
     @Operation(summary = "Get all overdue tasks")
     public List<TaskResponse> getOverdue() {
         return taskService.findOverdue().stream().map(taskMapper::toResponse).toList();
     }
 
-    // GET /api/tasks/board?projectId=xxx
+
     @GetMapping("/board")
     @Operation(summary = "Get Kanban board for a project", description = "Returns tasks sorted by priority then due date for board display")
     public List<TaskResponse> getBoard(
@@ -103,7 +98,7 @@ public class TaskController {
         return taskService.findKanbanBoard(projectId).stream().map(taskMapper::toResponse).toList();
     }
 
-    // POST /api/tasks
+
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Create a new task")
@@ -114,7 +109,7 @@ public class TaskController {
         return ResponseEntity.created(URI.create("/api/tasks/" + task.getId())).body(taskMapper.toResponse(task));
     }
 
-    // PUT /api/tasks/{id}
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER') or (hasRole('DEVELOPER') and @taskAuthService.isAssignee(#id, authentication.name))")
     @Operation(summary = "Update a task")
@@ -140,12 +135,9 @@ public class TaskController {
         return taskMapper.toResponse(taskService.getById(id));
     }
 
-    // DELETE /api/tasks/{id}
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER')")
     @Operation(summary = "Delete a task")
-    @ApiResponses({ @ApiResponse(responseCode = "204", description = "Deleted"),
-            @ApiResponse(responseCode = "404", description = "Not found") })
     public ResponseEntity<Void> deleteTask(@PathVariable UUID id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();

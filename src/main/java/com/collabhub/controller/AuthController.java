@@ -32,25 +32,18 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register a new user")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Registered, token returned"),
-            @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "409", description = "Email already in use") })
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
     @Operation(summary = "Login and receive JWT")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "Login successful"),
-            @ApiResponse(responseCode = "401", description = "Bad credentials") })
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
     @PostMapping("/refresh")
     @Operation(summary = "Refresh access token")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "New access token issued"),
-            @ApiResponse(responseCode = "400", description = "Invalid or expired refresh token") })
     public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request));
     }

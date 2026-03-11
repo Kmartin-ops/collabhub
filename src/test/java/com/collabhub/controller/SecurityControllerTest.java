@@ -1,7 +1,5 @@
 package com.collabhub.controller;
-
 import com.collabhub.config.SecurityConfig;
-import com.collabhub.dto.ProjectResponse;
 import com.collabhub.mapper.ProjectMapperImpl;
 import com.collabhub.security.JwtAuthFilter;
 import com.collabhub.security.TaskAuthService;
@@ -73,8 +71,18 @@ class SecurityControllerTest {
         @WithMockUser(username = "bob@test.com", roles = "DEVELOPER")
         @DisplayName("DEVELOPER can list projects")
         void developerCanListProjects() throws Exception {
-            when(projectService.getAllProjects()).thenReturn(List.of());
-            mockMvc.perform(get("/api/projects")).andExpect(status().isOk());
+            // Developer-specific project list
+            var developerProject = new com.collabhub.domain.Project("Dev Project", "Developer-only project");
+            developerProject.setId(UUID.randomUUID());
+            when(projectService.findByMember(any()))
+                    .thenReturn(List.of(developerProject));
+
+            mockMvc.perform(get("/api/projects"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].name").value("Dev Project"))
+                    .andExpect(jsonPath("$[0].description").value("Developer-only project"));
+
+            verify(projectService).findByMember(any());
         }
 
         @Test

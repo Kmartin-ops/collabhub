@@ -56,8 +56,6 @@ class AuthServiceTest {
         refreshToken = new RefreshToken("refresh-token-xyz", user, java.time.Instant.now().plusSeconds(3600));
     }
 
-    // ── register ──────────────────────────────────────────────────────────────
-
     @Nested
     @DisplayName("register()")
     class Register {
@@ -71,8 +69,8 @@ class AuthServiceTest {
             when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
             when(refreshTokenService.createRefreshToken(any())).thenReturn(refreshToken);
 
-            AuthResponse resp = authService
-                    .register(new RegisterRequest("Alice", "alice@test.com", "secret", "DEVELOPER"));
+            AuthResponse resp = authService.register(
+                    new RegisterRequest("Alice", "alice@test.com", "secret", "DEVELOPER"));
 
             assertThat(resp.accessToken()).isEqualTo("access-token");
             assertThat(resp.refreshToken()).isEqualTo("refresh-token-xyz");
@@ -90,7 +88,8 @@ class AuthServiceTest {
             when(jwtService.generateToken(anyString(), anyString())).thenReturn("tok");
             when(refreshTokenService.createRefreshToken(any())).thenReturn(refreshToken);
 
-            AuthResponse resp = authService.register(new RegisterRequest("Alice", "alice@test.com", "secret", null));
+            AuthResponse resp = authService.register(
+                    new RegisterRequest("Alice", "alice@test.com", "secret", null));
 
             assertThat(resp.role()).isEqualTo("DEVELOPER");
         }
@@ -100,15 +99,14 @@ class AuthServiceTest {
         void duplicateEmail() {
             when(userRepository.existsByEmail("alice@test.com")).thenReturn(true);
 
-            assertThatThrownBy(
-                    () -> authService.register(new RegisterRequest("Alice", "alice@test.com", "secret", "DEVELOPER")))
-                            .isInstanceOf(DuplicateResourceException.class);
+            RegisterRequest req = new RegisterRequest("Alice", "alice@test.com", "secret", "DEVELOPER");
+
+            assertThatThrownBy(() -> authService.register(req))
+                    .isInstanceOf(DuplicateResourceException.class);
 
             verify(userRepository, never()).save(any());
         }
     }
-
-    // ── login ─────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("login()")
@@ -121,7 +119,8 @@ class AuthServiceTest {
             when(jwtService.generateToken(anyString(), anyString())).thenReturn("access-token");
             when(refreshTokenService.createRefreshToken(any())).thenReturn(refreshToken);
 
-            AuthResponse resp = authService.login(new LoginRequest("alice@test.com", "secret"));
+            LoginRequest loginReq = new LoginRequest("alice@test.com", "secret");
+            AuthResponse resp = authService.login(loginReq);
 
             assertThat(resp.accessToken()).isEqualTo("access-token");
             assertThat(resp.email()).isEqualTo("alice@test.com");
@@ -133,12 +132,12 @@ class AuthServiceTest {
         void badCredentials() {
             doThrow(new BadCredentialsException("bad")).when(authManager).authenticate(any());
 
-            assertThatThrownBy(() -> authService.login(new LoginRequest("alice@test.com", "wrong")))
+            LoginRequest wrongLogin = new LoginRequest("alice@test.com", "wrong");
+
+            assertThatThrownBy(() -> authService.login(wrongLogin))
                     .isInstanceOf(BadCredentialsException.class);
         }
     }
-
-    // ── refresh ───────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("refresh()")
@@ -153,14 +152,14 @@ class AuthServiceTest {
             when(jwtService.generateToken(anyString(), anyString())).thenReturn("new-access-token");
             when(refreshTokenService.createRefreshToken(user)).thenReturn(next);
 
-            AuthResponse resp = authService.refresh(new RefreshRequest("refresh-token-xyz"));
+            RefreshRequest req = new RefreshRequest("refresh-token-xyz");
+
+            AuthResponse resp = authService.refresh(req);
 
             assertThat(resp.accessToken()).isEqualTo("new-access-token");
             assertThat(resp.refreshToken()).isEqualTo("new-refresh-token");
         }
     }
-
-    // ── logout ────────────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("logout()")
@@ -180,11 +179,10 @@ class AuthServiceTest {
         @DisplayName("throws when user not found")
         void userNotFound() {
             when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
-            assertThatThrownBy(() -> authService.logout("nobody@test.com")).isInstanceOf(Exception.class);
+            String email = "nobody@test.com";
+            assertThatThrownBy(() -> authService.logout(email)).isInstanceOf(Exception.class);
         }
     }
-
-    // ── changePassword ────────────────────────────────────────────────────────
 
     @Nested
     @DisplayName("changePassword()")
@@ -197,7 +195,9 @@ class AuthServiceTest {
             when(passwordEncoder.matches("old-pass", "hashed")).thenReturn(true);
             when(passwordEncoder.encode("new-pass")).thenReturn("new-hashed");
 
-            authService.changePassword("alice@test.com", new ChangePasswordRequest("old-pass", "new-pass"));
+            ChangePasswordRequest req = new ChangePasswordRequest("old-pass", "new-pass");
+
+            authService.changePassword("alice@test.com", req);
 
             verify(userRepository).save(user);
             verify(refreshTokenService).revokeAllForUser(user);
@@ -210,10 +210,11 @@ class AuthServiceTest {
             when(userRepository.findByEmail("alice@test.com")).thenReturn(Optional.of(user));
             when(passwordEncoder.matches(anyString(), anyString())).thenReturn(false);
 
-            assertThatThrownBy(
-                    () -> authService.changePassword("alice@test.com", new ChangePasswordRequest("wrong", "new-pass")))
-                            .isInstanceOf(IllegalArgumentException.class)
-                            .hasMessageContaining("Current password is incorrect");
+            ChangePasswordRequest req = new ChangePasswordRequest("wrong", "new-pass");
+
+            assertThatThrownBy(() -> authService.changePassword("alice@test.com", req))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Current password is incorrect");
 
             verify(userRepository, never()).save(any());
         }

@@ -15,10 +15,7 @@ class TaskSummaryTest {
 
         String formatted = summary.formatted();
 
-        assertThat(formatted).contains("Alice");
-        assertThat(formatted).contains("Total: 10");
-        assertThat(formatted).contains("Overdue:  2");
-        assertThat(formatted).contains("Done:  4");
-        assertThat(formatted).contains("In Progress:  4");
+        assertThat(formatted)
+                .contains("Alice", "Total: 10", "Overdue:  2", "Done:  4", "In Progress:  4");
     }
 }

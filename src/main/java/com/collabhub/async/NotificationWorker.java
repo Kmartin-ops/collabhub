@@ -1,16 +1,23 @@
 package com.collabhub.async;
 
 import com.collabhub.notification.Notifiable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
 
 public class NotificationWorker implements Runnable {
 
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationWorker.class);
+
+    private static final String SHUTDOWN_EVENT = "SHUTDOWN";
+    private static final long PROCESSING_DELAY_MS = 50;
+
     private final BlockingQueue<NotificationEvent> queue;
     private final Notifiable notifier;
     private final String workerName;
 
-    // volatile — ensures changes to this flag are visible across threads
+    // Volatile ensures visibility across threads
     private volatile boolean running = true;
 
     public NotificationWorker(BlockingQueue<NotificationEvent> queue, Notifiable notifier, String workerName) {
@@ -21,42 +28,55 @@ public class NotificationWorker implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("[" + workerName + "] Started on thread: " + Thread.currentThread());
+        if (LOG.isInfoEnabled()) {
+            LOG.info("[{}] Started on thread: {}", workerName, Thread.currentThread());
+        }
 
-        while (running) {
+        boolean shouldRun = true;
+
+        while (shouldRun && running) {
+            NotificationEvent event = null;
             try {
-                // take() blocks here until an event arrives — doesn't burn CPU waiting
-                NotificationEvent event = queue.take();
+                event = queue.take(); // blocking call, efficient waiting
 
-                // Check for the poison pill shutdown signal
-                if ("SHUTDOWN".equals(event.eventType())) {
-                    System.out.println("[" + workerName + "] Received shutdown signal.");
-                    break;
+                if (SHUTDOWN_EVENT.equals(event.eventType())) {
+                    if (LOG.isInfoEnabled()) {
+                        LOG.info("[{}] Received shutdown signal.", workerName);
+                    }
+                    shouldRun = false; // only one exit from loop
+                } else {
+                    processEvent(event);
                 }
 
-                processEvent(event);
-
             } catch (InterruptedException e) {
-                // Thread was interrupted — restore interrupt flag and exit cleanly
                 Thread.currentThread().interrupt();
-                System.out.println("[" + workerName + "] Interrupted — shutting down.");
-                break;
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("[{}] Interrupted — shutting down.", workerName, e);
+                }
+                shouldRun = false; // exit loop on interruption
             }
         }
 
-        System.out.println("[" + workerName + "] Stopped.");
+        if (LOG.isInfoEnabled()) {
+            LOG.info("[{}] Stopped.", workerName);
+        }
     }
 
     private void processEvent(NotificationEvent event) {
-        // Simulate a small processing delay (like a real network call)
         try {
-            Thread.sleep(50);
+            Thread.sleep(PROCESSING_DELAY_MS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("[{}] Interrupted during event processing.", workerName, e);
+            }
         }
 
         notifier.notify(event.recipient(), event.message());
-        System.out.println("[" + workerName + "] Processed event: " + event.eventType() + " | id=" + event.eventId());
+
+        if (LOG.isInfoEnabled()) {
+            LOG.info("[{}] Processed event: {} | id={}", workerName, event.eventType(), event.eventId());
+        }
     }
 
     public void stop() {

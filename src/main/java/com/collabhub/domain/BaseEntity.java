@@ -24,7 +24,7 @@ public abstract class BaseEntity {
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 
-    public BaseEntity() {
+    protected BaseEntity() {
         this.createdAt = LocalDateTime.now();
     }
 

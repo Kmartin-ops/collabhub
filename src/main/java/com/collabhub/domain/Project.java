@@ -9,6 +9,8 @@ import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,6 +21,7 @@ import java.util.Set;
 @Entity
 @Table(name = "projects")
 public class Project extends BaseEntity {
+    private static final Logger LOG = LoggerFactory.getLogger(Project.class);
 
     @Column(nullable = false)
     private String name;
@@ -55,7 +58,7 @@ public class Project extends BaseEntity {
     public void addMember(User user) {
         boolean added = members.add(user);
         if (!added) {
-            System.out.println("[Project] " + user.getName() + " is already a member — skipped.");
+            LOG.info("[Project] {} is already a member — skipped.", user.getName());
         }
     }
 

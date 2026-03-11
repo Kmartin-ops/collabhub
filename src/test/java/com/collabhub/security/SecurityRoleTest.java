@@ -10,6 +10,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,9 +36,8 @@ class SecurityRoleTest {
         @Test
         @WithMockUser(roles = "MANAGER")
         void managerCanDeleteProject() throws Exception {
-            // 404 is fine — it means security passed, just no data
             mockMvc.perform(delete("/api/projects/1")).andExpect(
-                    result -> org.junit.jupiter.api.Assertions.assertTrue(result.getResponse().getStatus() != 403));
+                    result -> assertNotEquals(403, result.getResponse().getStatus()));
         }
 
         @Test
@@ -60,7 +60,7 @@ class SecurityRoleTest {
         @WithMockUser(roles = "MANAGER")
         void managerCanCreateProject() throws Exception {
             mockMvc.perform(post("/api/projects").contentType("application/json").content("{}")).andExpect(
-                    result -> org.junit.jupiter.api.Assertions.assertTrue(result.getResponse().getStatus() != 403));
+                    result -> assertNotEquals(403, result.getResponse().getStatus()));
         }
 
         @Test
@@ -83,7 +83,7 @@ class SecurityRoleTest {
         @WithMockUser(roles = "MANAGER")
         void managerCanDeleteTask() throws Exception {
             mockMvc.perform(delete("/api/tasks/1")).andExpect(
-                    result -> org.junit.jupiter.api.Assertions.assertTrue(result.getResponse().getStatus() != 403));
+                    result -> assertNotEquals(403, result.getResponse().getStatus()));
         }
     }
 }

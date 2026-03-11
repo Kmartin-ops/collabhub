@@ -8,7 +8,7 @@ public abstract sealed class StatusChangeHandler permits TaskCreatedHandler, Tas
 
     protected final Notifiable notifier;
 
-    public StatusChangeHandler(Notifiable notifier) {
+    protected StatusChangeHandler(Notifiable notifier) {
         this.notifier = notifier;
     }
 

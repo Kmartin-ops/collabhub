@@ -48,15 +48,14 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Get all users")
-    @ApiResponse(responseCode = "200", description = "List of users returned")
+
     public List<UserResponse> getAllUsers() {
         return userService.findAll().stream().map(userMapper::toResponse).toList();
     }
 
     @GetMapping("/{email}")
     @Operation(summary = "Get user by email")
-    @ApiResponses({ @ApiResponse(responseCode = "200", description = "User found"),
-            @ApiResponse(responseCode = "404", description = "User not found", content = @Content(schema = @Schema(implementation = com.collabhub.dto.ErrorResponse.class))) })
+
     public UserResponse getUserByEmail(
             @Parameter(description = "User email", example = "alice@collabhub.com") @PathVariable String email) {
         return userMapper.toResponse(userService.getByEmail(email));
@@ -64,9 +63,7 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Create a new user")
-    @ApiResponses({ @ApiResponse(responseCode = "201", description = "User created"),
-            @ApiResponse(responseCode = "400", description = "Validation failed"),
-            @ApiResponse(responseCode = "409", description = "Email already exists") })
+
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         var user = userService.createUser(request.name(), request.email(), request.role(), request.password());
         return ResponseEntity.created(URI.create("/api/users/" + user.getEmail())).body(userMapper.toResponse(user));

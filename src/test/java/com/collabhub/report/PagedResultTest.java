@@ -23,7 +23,7 @@ class PagedResultTest {
         assertThat(firstPage.hasNext()).isTrue();
         assertThat(firstPage.hasPrevious()).isFalse();
         assertThat(firstPage.getContent()).hasSize(2);
-        assertThat(firstPage.getPage()).isEqualTo(0);
+        assertThat(firstPage.getPage()).isZero();
         assertThat(firstPage.getPageSize()).isEqualTo(2);
         assertThat(firstPage.getTotalElements()).isEqualTo(5);
     }

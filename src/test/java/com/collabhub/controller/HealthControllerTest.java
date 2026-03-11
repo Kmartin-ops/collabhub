@@ -46,8 +46,10 @@ class HealthControllerTest {
     void shouldReturnHealthPayload() {
         Map<String, Object> payload = healthController.health();
 
-        assertThat(payload.get("status")).isEqualTo("UP");
-        assertThat(payload.get("app")).isEqualTo("CollabHub");
+        assertThat(payload)
+                .containsEntry("status", "UP")
+                .containsEntry("app", "CollabHub");
+
         assertThat(payload.get("timestamp")).isInstanceOf(String.class);
     }
 
@@ -55,18 +57,22 @@ class HealthControllerTest {
     @DisplayName("info endpoint should expose configured app details")
     void shouldReturnInfoPayload() {
         when(environment.getProperty("spring.application.name")).thenReturn("collabhub");
-        when(environment.getActiveProfiles()).thenReturn(new String[] { "dev", "test" });
+        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev", "test"});
 
         Map<String, Object> payload = healthController.info();
 
-        assertThat(payload.get("app")).isEqualTo("collabhub");
+        assertThat(payload)
+                .containsEntry("app", "collabhub")
+                .containsEntry("description", "Team collaboration backend");
+
         assertThat(payload.get("profiles").toString()).contains("dev");
-        assertThat(payload.get("description")).isEqualTo("Team collaboration backend");
 
         @SuppressWarnings("unchecked")
         Map<String, Object> config = (Map<String, Object>) payload.get("config");
-        assertThat(config.get("dispatcherThreads")).isEqualTo(4);
-        assertThat(config.get("queueCapacity")).isEqualTo(200);
-        assertThat(config.get("defaultPageSize")).isEqualTo(20);
+
+        assertThat(config)
+                .containsEntry("dispatcherThreads", 4)
+                .containsEntry("queueCapacity", 200)
+                .containsEntry("defaultPageSize", 20);
     }
 }

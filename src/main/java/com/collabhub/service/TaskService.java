@@ -77,7 +77,7 @@ public class TaskService {
         }
     }
 
-    @Transactional(readOnly = true)
+
     public Task getById(UUID id) {
         return taskRepository.findById(id).orElseThrow(() -> {
             LOG.warn("Task not found: id={}", id);

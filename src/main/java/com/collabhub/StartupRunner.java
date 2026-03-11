@@ -25,6 +25,10 @@ public class StartupRunner implements ApplicationRunner {
 
     private static final Logger LOG = LoggerFactory.getLogger(StartupRunner.class);
 
+    // Constants
+    private static final String DEFAULT_PASSWORD = "Password123!";
+    private static final String ROLE_DEVELOPER = "DEVELOPER";
+
     private final ProjectService projectService;
     private final TaskService taskService;
     private final UserService userService;
@@ -34,7 +38,8 @@ public class StartupRunner implements ApplicationRunner {
     private final Environment environment;
 
     public StartupRunner(ProjectService projectService, TaskService taskService, UserService userService,
-            ConsoleNotification notifier, ApplicationContext context, CollabHubProperties properties, Environment environment) {
+                         ConsoleNotification notifier, ApplicationContext context, CollabHubProperties properties,
+                         Environment environment) {
         this.projectService = projectService;
         this.taskService = taskService;
         this.userService = userService;
@@ -47,35 +52,47 @@ public class StartupRunner implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) throws Exception {
         String[] profiles = environment.getActiveProfiles();
-        LOG.info("Active profiles: {}", profiles.length > 0 ? Arrays.toString(profiles) : "[default]");
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Active profiles: {}", profiles.length > 0 ? Arrays.toString(profiles) : "[default]");
+        }
 
         // Only seed if database is empty
         if (userService.findAll().isEmpty()) {
-            LOG.info("Empty database detected — seeding...");
+            if (LOG.isInfoEnabled()) {
+                LOG.info("Empty database detected — seeding...");
+            }
             seed();
         } else {
-            LOG.info("Database already has data — skipping seed.");
+            if (LOG.isInfoEnabled()) {
+                LOG.info("Database already has data — skipping seed.");
+            }
         }
 
-        LOG.info("CollabHub ready on port {}", environment.getProperty("server.port", "8080"));
+        if (LOG.isInfoEnabled()) {
+            LOG.info("CollabHub ready on port {}", environment.getProperty("server.port", "8080"));
+        }
     }
 
     private void seed() throws InterruptedException {
-        NotificationDispatcher dispatcher = new NotificationDispatcher(notifier,
-                properties.getNotifications().getDispatcherThreads(), properties.getNotifications().getQueueCapacity());
+        NotificationDispatcher dispatcher = new NotificationDispatcher(
+                notifier,
+                properties.getNotifications().getDispatcherThreads(),
+                properties.getNotifications().getQueueCapacity()
+        );
         taskService.setDispatcher(dispatcher);
 
         // Users
-        User alice = userService.createUser("Alice Johnson", "alice@collabhub.com", "MANAGER", "Password123!");
-        User bob   = userService.createUser("Bob",   "bob@collabhub.com",   "DEVELOPER", "Password123!");
-        User carol = userService.createUser("Carol", "carol@collabhub.com", "DEVELOPER", "Password123!");
-        User dave  = userService.createUser("Dave",  "dave@collabhub.com",  "DEVELOPER", "Password123!");
-        User frank = userService.createUser("Frank", "frank@collabhub.com", "MANAGER",   "Password123!");
-        userService.createUser("Eve",   "eve@collabhub.com",   "DEVELOPER", "Password123!");
-        userService.createUser("Grace", "grace@collabhub.com", "DEVELOPER", "Password123!");
-        userService.createUser("Henry", "henry@collabhub.com", "DEVELOPER", "Password123!");
-        userService.createUser("Iris",  "iris@collabhub.com",  "DEVELOPER", "Password123!");
-        userService.createUser("James", "james@collabhub.com", "ADMIN",     "Password123!");
+        User alice = userService.createUser("Alice Johnson", "alice@collabhub.com", "MANAGER", DEFAULT_PASSWORD);
+        User bob   = userService.createUser("Bob",   "bob@collabhub.com",   ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        User carol = userService.createUser("Carol", "carol@collabhub.com", ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        User dave  = userService.createUser("Dave",  "dave@collabhub.com",  ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        User frank = userService.createUser("Frank", "frank@collabhub.com", "MANAGER",   DEFAULT_PASSWORD);
+        userService.createUser("Eve",   "eve@collabhub.com",   ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        userService.createUser("Grace", "grace@collabhub.com", ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        userService.createUser("Henry", "henry@collabhub.com", ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        userService.createUser("Iris",  "iris@collabhub.com",  ROLE_DEVELOPER, DEFAULT_PASSWORD);
+        userService.createUser("James", "james@collabhub.com", "ADMIN",     DEFAULT_PASSWORD);
+
         // Projects
         Project mvp = projectService.createProject("CollabHub MVP", "Core platform features", alice);
         projectService.addMember(mvp, bob);
@@ -101,7 +118,11 @@ public class StartupRunner implements ApplicationRunner {
         Thread.sleep(500);
         dispatcher.shutdown();
 
-        LOG.info("Seed complete — users={}, projects={}, tasks={}", userService.findAll().size(),
-                projectService.getAllProjects().size(), taskService.findAll().size());
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Seed complete — users={}, projects={}, tasks={}",
+                    userService.findAll().size(),
+                    projectService.getAllProjects().size(),
+                    taskService.findAll().size());
+        }
     }
 }
