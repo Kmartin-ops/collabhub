@@ -26,6 +26,22 @@
         <surefire.version>3.2.5</surefire.version>
         <failsafe.version>3.2.5</failsafe.version>
         <sonar.projectKey>MyIntelliJApp</sonar.projectKey>
+        <sonar.coverage.exclusions>
+            **/dto/**,
+            **/mapper/**,
+            **/config/**,
+            **/domain/**,
+            **/exception/**,
+            **/controller/**,
+            **/*Application.java,
+            **/StartupRunner.java,
+            **/notification/**,
+            **/async/**
+        </sonar.coverage.exclusions>
+        <sonar.cpd.exclusions>
+            **/dto/**,
+            **/domain/**
+        </sonar.cpd.exclusions>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
