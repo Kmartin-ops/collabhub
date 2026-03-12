@@ -8,13 +8,15 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test
+    name: Build, Test & Analyze
     runs-on: ubuntu-latest
 
     steps:
       # 1. Check out the code
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # SonarCloud needs full history for blame info
 
       # 2. Set up Java 21
       - name: Set up JDK 21
@@ -24,14 +26,34 @@ jobs:
           distribution: 'temurin'
           cache: maven   # cache Maven deps between runs
 
-      # 3. Run full build and tests
+      # 3. Cache SonarCloud packages
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      # 4. Run full build, tests and JaCoCo coverage
       - name: Build and test
         run: mvn --batch-mode verify
 
-      # 4. Upload test reports if tests fail
+      # 5. Upload test reports if tests fail
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-reports
           path: target/surefire-reports/
+
+      # 6. SonarCloud analysis
+      - name: SonarCloud analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn --batch-mode sonar:sonar \
+            -Dsonar.projectKey=kmartin-ops \
+            -Dsonar.organization=Kmartin-ops \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
