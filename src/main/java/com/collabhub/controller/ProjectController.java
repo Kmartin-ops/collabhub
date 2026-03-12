@@ -12,6 +12,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,8 +47,16 @@ public class ProjectController {
 
     @GetMapping
     @Operation(summary = "Get all projects")
-    public List<ProjectResponse> getAllProjects(@RequestParam(required = false) String status) {
-        return projectService.getAllProjects().stream()
+    public List<ProjectResponse> getAllProjects(@RequestParam(required = false) String status,
+            Authentication authentication) {
+        List<com.collabhub.domain.Project> projects;
+        if (authentication != null && hasRole(authentication, "ROLE_DEVELOPER") && !hasRole(authentication, "ROLE_MANAGER")) {
+            var user = userService.getByEmail(authentication.getName());
+            projects = projectService.findByMember(user);
+        } else {
+            projects = projectService.getAllProjects();
+        }
+        return projects.stream()
                 .filter(project -> status == null || status.isBlank() || status.equalsIgnoreCase(project.getStatus()))
                 .map(projectMapper::toResponse).toList();
     }
@@ -84,6 +94,15 @@ public class ProjectController {
             return context.getAuthentication().getName();
         }
         throw new IllegalStateException("Authenticated user is required to create a project");
+    }
+
+    private boolean hasRole(Authentication authentication, String role) {
+        for (GrantedAuthority authority : authentication.getAuthorities()) {
+            if (role.equals(authority.getAuthority())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @PostMapping("/{id}/members")

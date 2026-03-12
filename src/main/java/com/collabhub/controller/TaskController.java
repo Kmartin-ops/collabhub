@@ -10,8 +10,6 @@ import com.collabhub.service.TaskService;
 import com.collabhub.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -78,7 +76,8 @@ public class TaskController {
                 .from(new org.springframework.data.domain.PageImpl<>(content, pageable, page.getTotalElements()));
     }
 
-
+    @GetMapping("/{id}")
+    @Operation(summary = "Get task by ID")
     public TaskResponse getById(@PathVariable UUID id) {
         return taskMapper.toResponse(taskService.getById(id));
     }

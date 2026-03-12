@@ -28,7 +28,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +64,181 @@ class TaskServiceTest {
         project.setId(projectId);
         task = new Task("Fix bug", "HIGH", LocalDate.now().plusDays(3), project);
         task.setId(taskId);
+    }
+
+    @Nested
+    @DisplayName("createTask()")
+    class CreateTask {
+
+        @Test
+        @DisplayName("dispatches when dispatcher is set")
+        void dispatchesWithDispatcher() {
+            taskService.setDispatcher(dispatcher);
+            when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+                Task saved = invocation.getArgument(0);
+                saved.setId(taskId);
+                return saved;
+            });
+
+            Task created = taskService.createTask("New task", "MEDIUM", LocalDate.now().plusDays(1), project, creator);
+
+            assertThat(created.getId()).isEqualTo(taskId);
+            verify(dispatcher).dispatch(any(NotificationEvent.class));
+            verify(notifier, never()).notify(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("notifies directly when dispatcher is not set")
+        void notifiesWhenNoDispatcher() {
+            when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> {
+                Task saved = invocation.getArgument(0);
+                saved.setId(taskId);
+                return saved;
+            });
+
+            taskService.createTask("New task", "MEDIUM", LocalDate.now().plusDays(1), project, creator);
+
+            verify(notifier).notify(eq(creator.getName()),
+                    contains("Task 'New task' was created in project: " + project.getName()));
+            verify(dispatcher, never()).dispatch(any(NotificationEvent.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("assignTask()")
+    class AssignTask {
+
+        @Test
+        @DisplayName("notifies assignment when dispatcher is not set")
+        void notifiesAssignment() {
+            taskService.assignTask(task, assignee, creator);
+
+            assertThat(task.getAssignee()).isEqualTo(assignee);
+            verify(taskRepository).save(task);
+            verify(notifier).notify(eq(creator.getName()),
+                    contains("Task '" + task.getTitle() + "' was assigned to: " + assignee.getName()));
+        }
+
+        @Test
+        @DisplayName("dispatches assignment when dispatcher is set")
+        void dispatchesAssignment() {
+            taskService.setDispatcher(dispatcher);
+
+            taskService.assignTask(task, assignee, creator);
+
+            verify(taskRepository).save(task);
+            verify(dispatcher).dispatch(any(NotificationEvent.class));
+            verify(notifier, never()).notify(anyString(), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("changeStatus()")
+    class ChangeStatus {
+
+        @Test
+        @DisplayName("notifies on DONE status")
+        void notifiesDone() {
+            taskService.changeStatus(task, "DONE", creator);
+
+            verify(taskRepository).save(task);
+            verify(notifier).notify(eq(creator.getName()), contains("DONE"));
+        }
+
+        @Test
+        @DisplayName("does not notify when status is not DONE")
+        void doesNotNotifyForNonDone() {
+            taskService.changeStatus(task, "IN_PROGRESS", creator);
+
+            verify(taskRepository).save(task);
+            verify(notifier, never()).notify(anyString(), anyString());
+        }
+
+        @Test
+        @DisplayName("dispatches when dispatcher is set")
+        void dispatchesWhenDispatcherSet() {
+            taskService.setDispatcher(dispatcher);
+
+            taskService.changeStatus(task, "DONE", creator);
+
+            verify(dispatcher).dispatch(any(NotificationEvent.class));
+            verify(notifier, never()).notify(anyString(), anyString());
+        }
+    }
+
+    @Nested
+    @DisplayName("search()")
+    class Search {
+
+        @Test
+        @DisplayName("delegates to repository with specification")
+        void delegatesToRepository() {
+            Page<Task> page = new PageImpl<>(List.of(task));
+            when(taskRepository.findAll(any(Specification.class), any(PageRequest.class))).thenReturn(page);
+
+            Page<Task> result = taskService.search("BACKLOG", "HIGH", projectId, null, "bug",
+                    PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).hasSize(1);
+            verify(taskRepository).findAll(any(Specification.class), any(PageRequest.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("query helpers")
+    class QueryHelpers {
+
+        @Test
+        @DisplayName("findByProject delegates to repository")
+        void findByProject() {
+            when(taskRepository.findByProjectIdWithAssignee(projectId)).thenReturn(List.of(task));
+
+            List<Task> result = taskService.findByProject(projectId);
+
+            assertThat(result).containsExactly(task);
+        }
+
+        @Test
+        @DisplayName("findKanbanBoard delegates to repository")
+        void findKanbanBoard() {
+            when(taskRepository.findKanbanBoard(projectId)).thenReturn(List.of(task));
+
+            List<Task> result = taskService.findKanbanBoard(projectId);
+
+            assertThat(result).containsExactly(task);
+        }
+
+        @Test
+        @DisplayName("findByAssignee delegates to repository")
+        void findByAssignee() {
+            UUID assigneeId = UUID.randomUUID();
+            when(taskRepository.findByAssigneeId(assigneeId)).thenReturn(List.of(task));
+
+            List<Task> result = taskService.findByAssignee(assigneeId);
+
+            assertThat(result).containsExactly(task);
+        }
+
+        @Test
+        @DisplayName("findOverdue delegates to repository")
+        void findOverdue() {
+            when(taskRepository.findByDueDateBeforeAndStatusNot(any(LocalDate.class), eq("DONE")))
+                    .thenReturn(List.of(task));
+
+            List<Task> result = taskService.findOverdue();
+
+            assertThat(result).containsExactly(task);
+        }
+
+        @Test
+        @DisplayName("findAll delegates to repository")
+        void findAll() {
+            when(taskRepository.findAll()).thenReturn(List.of(task));
+
+            List<Task> result = taskService.findAll();
+
+            assertThat(result).containsExactly(task);
+        }
     }
 
     @Nested

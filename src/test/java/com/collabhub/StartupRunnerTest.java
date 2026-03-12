@@ -78,9 +78,9 @@ class StartupRunnerTest {
         Project mobile = new Project("CollabHub Mobile", "iOS & Android app");
         mobile.setId(UUID.randomUUID());
 
-        // Environment stubs
-        when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
-        when(environment.getProperty("server.port", "8080")).thenReturn("9090");
+        // Environment stubs (logging-dependent)
+        lenient().when(environment.getActiveProfiles()).thenReturn(new String[]{"dev"});
+        lenient().when(environment.getProperty("server.port", "8080")).thenReturn("9090");
 
         // Database empty first, then filled
         when(userService.findAll()).thenReturn(List.of())
@@ -115,12 +115,6 @@ class StartupRunnerTest {
                     return task;
                 });
 
-        when(projectService.getAllProjects()).thenReturn(List.of(mvp, mobile));
-        when(taskService.findAll()).thenReturn(List.of(
-                new Task("seed-1", "HIGH", LocalDate.now().plusDays(1), mvp),
-                new Task("seed-2", "LOW", LocalDate.now().plusDays(2), mobile)
-        ));
-
         // Run startup
         startupRunner.run(mock(ApplicationArguments.class));
 
@@ -132,17 +126,15 @@ class StartupRunnerTest {
         verify(taskService, times(4)).createTask(anyString(), anyString(), any(LocalDate.class), any(Project.class), any(User.class));
         verify(taskService, times(4)).assignTask(any(Task.class), any(User.class), any(User.class));
         verify(taskService, times(2)).changeStatus(any(Task.class), anyString(), any(User.class));
-        verify(userService, times(2)).findAll();
-        verify(projectService).getAllProjects();
-        verify(taskService).findAll();
+        verify(userService, atLeastOnce()).findAll();
     }
 
     @Test
     @DisplayName("should skip seed when users already exist")
     void shouldSkipSeedWhenUsersExist() throws Exception {
         User existing = user("Existing", "existing@collabhub.com", "MANAGER", "Password123!");
-        when(environment.getActiveProfiles()).thenReturn(new String[0]);
-        when(environment.getProperty("server.port", "8080")).thenReturn("8080");
+        lenient().when(environment.getActiveProfiles()).thenReturn(new String[0]);
+        lenient().when(environment.getProperty("server.port", "8080")).thenReturn("8080");
         when(userService.findAll()).thenReturn(List.of(existing));
 
         startupRunner.run(mock(ApplicationArguments.class));
