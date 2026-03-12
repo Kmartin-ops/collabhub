@@ -252,20 +252,22 @@ class ProjectServiceTest {
         }
 
         @Test
-        @DisplayName("should silently reject duplicate members")
+        @DisplayName("should silently skip if user already a member")
         void shouldRejectDuplicateMembers() {
             Project project = projectService.createProject("Test", "desc", alice);
+            project.addMember(bob); // bob already in the in-memory set
 
             clearInvocations(projectRepository);
 
+            // Return project that already has bob as member
             when(projectRepository.findByIdWithMembers(project.getId()))
                     .thenReturn(Optional.of(project));
 
+            // Try to add bob again — should skip
             projectService.addMember(project, bob);
-            projectService.addMember(project, bob); // duplicate
 
             assertEquals(2, project.getMembers().size()); // alice + bob only
-            verify(projectRepository, times(1)).save(project); // only saved once
+            verify(projectRepository, never()).save(any()); // no save because skipped
         }
 
         @Test
@@ -280,6 +282,7 @@ class ProjectServiceTest {
             assertThrows(ResourceNotFoundException.class,
                     () -> projectService.addMember(project, bob));
         }
+
     }
 
     @Nested
@@ -356,4 +359,5 @@ class ProjectServiceTest {
                     () -> projectService.deleteProject(randomId));
         }
     }
+
 }

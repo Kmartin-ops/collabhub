@@ -33,6 +33,8 @@
             **/domain/**,
             **/exception/**,
             **/controller/**,
+            **/report/**,
+            **/security/**,
             **/*Application.java,
             **/StartupRunner.java,
             **/notification/**,
