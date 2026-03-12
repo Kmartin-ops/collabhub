@@ -29,6 +29,7 @@ class UserServiceTest {
 
     @Mock
     UserRepository userRepository;
+
     @Mock
     PasswordEncoder passwordEncoder;
 
@@ -41,7 +42,7 @@ class UserServiceTest {
     @BeforeEach
     void setUp() {
         userId = UUID.randomUUID();
-        user = new User("Alice", "alice@test.com", "DEVELOPER","password123!");
+        user = new User("Alice", "alice@test.com", "DEVELOPER", "password123!");
         user.setId(userId);
     }
 
@@ -57,7 +58,7 @@ class UserServiceTest {
             when(userRepository.existsByEmail("alice@test.com")).thenReturn(false);
             when(userRepository.save(any(User.class))).thenReturn(user);
 
-            User result = userService.createUser("Alice", "alice@test.com", "DEVELOPER","password123!");
+            User result = userService.createUser("Alice", "alice@test.com", "DEVELOPER", "password123!");
 
             assertThat(result.getEmail()).isEqualTo("alice@test.com");
             assertThat(result.getRole()).isEqualTo("DEVELOPER");
@@ -69,7 +70,8 @@ class UserServiceTest {
         void duplicateEmail() {
             when(userRepository.existsByEmail("alice@test.com")).thenReturn(true);
 
-            assertThatThrownBy(() -> userService.createUser("Alice", "alice@test.com", "DEVELOPER","password123!"))
+            assertThatThrownBy(() ->
+                    userService.createUser("Alice", "alice@test.com", "DEVELOPER", "password123!"))
                     .isInstanceOf(DuplicateResourceException.class);
 
             verify(userRepository, never()).save(any());
@@ -121,9 +123,10 @@ class UserServiceTest {
         @Test
         @DisplayName("throws ResourceNotFoundException when missing")
         void notFound() {
+            UUID id = UUID.randomUUID();
             when(userRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> userService.getById(UUID.randomUUID()))
+            assertThatThrownBy(() -> userService.getById(id))
                     .isInstanceOf(ResourceNotFoundException.class);
         }
     }

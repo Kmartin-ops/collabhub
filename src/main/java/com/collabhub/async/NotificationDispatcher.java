@@ -4,8 +4,6 @@ import com.collabhub.notification.Notifiable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,29 +13,30 @@ import java.util.concurrent.TimeUnit;
 public class NotificationDispatcher {
 
     private static final Logger LOG = LoggerFactory.getLogger(NotificationDispatcher.class);
+    private static final String SHUTDOWN_EVENT = "SHUTDOWN";
 
     private final BlockingQueue<NotificationEvent> queue;
     private final ExecutorService executor;
-    private final List<NotificationWorker> workers;
     private final int workerCount;
 
     public NotificationDispatcher(Notifiable notifier, int workerCount, int queueCapacity) {
         this.workerCount = workerCount;
         this.queue = new LinkedBlockingQueue<>(queueCapacity);
-        this.workers = new ArrayList<>();
 
-        // Virtual thread executor — one virtual thread per submitted task
+        // Virtual thread executor
         this.executor = Executors.newVirtualThreadPerTaskExecutor();
 
-        // Start the workers
-        for (int i = 1; i <= workerCount; i++) {
-            NotificationWorker worker = new NotificationWorker(queue, notifier, "Worker-" + i);
-            workers.add(worker);
-            executor.execute(worker);
-        }
+        startWorkers(notifier);
 
         if (LOG.isInfoEnabled()) {
             LOG.info("[Dispatcher] Started with {} virtual thread workers. Queue capacity: {}", workerCount, queueCapacity);
+        }
+    }
+
+    private void startWorkers(Notifiable notifier) {
+        for (int i = 1; i <= workerCount; i++) {
+            NotificationWorker worker = new NotificationWorker(queue, notifier, "Worker-" + i);
+            executor.execute(worker);
         }
     }
 
@@ -45,56 +44,94 @@ public class NotificationDispatcher {
     public void dispatch(NotificationEvent event) {
         try {
             boolean accepted = queue.offer(event, 100, TimeUnit.MILLISECONDS);
-            if (!accepted && LOG.isWarnEnabled()) {
-                LOG.warn("[Dispatcher] ⚠️  Queue full — dropped event: {} for {}", event.eventType(), event.recipient());
+
+            if (!accepted) {
+                logQueueFull(event);
             }
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            if (LOG.isErrorEnabled()) {
-                LOG.error("[Dispatcher] Interrupted while dispatching event: {} for {}", event.eventType(), event.recipient(), e);
-            }
+            logDispatchInterrupted(event, e);
         }
     }
 
     // Graceful shutdown — drain the queue first, then stop workers
     public void shutdown() {
+        logShutdownStart();
+        sendShutdownSignals();
+        stopExecutor();
+    }
+
+    private void logShutdownStart() {
         if (LOG.isInfoEnabled()) {
             LOG.info("[Dispatcher] Shutting down — draining queue ({} remaining)...", queue.size());
         }
+    }
 
-        // Send one poison pill per worker
+    private void sendShutdownSignals() {
         for (int i = 0; i < workerCount; i++) {
             try {
-                queue.put(NotificationEvent.of("system", "shutdown", "SHUTDOWN"));
+                queue.put(NotificationEvent.of("system", "shutdown", SHUTDOWN_EVENT));
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                if (LOG.isErrorEnabled()) {
-                    LOG.error("[Dispatcher] Interrupted while sending shutdown signal to workers", e);
-                }
+                logShutdownSignalError(e);
             }
         }
+    }
 
+    private void stopExecutor() {
         executor.shutdown();
 
         try {
-            // Wait up to 5 seconds for all workers to finish
             boolean finished = executor.awaitTermination(5, TimeUnit.SECONDS);
+
             if (finished) {
-                if (LOG.isInfoEnabled()) {
-                    LOG.info("[Dispatcher] All workers stopped cleanly.");
-                }
+                logCleanShutdown();
             } else {
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("[Dispatcher] Timeout — forcing shutdown.");
-                }
+                logForcedShutdown();
                 executor.shutdownNow();
             }
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             executor.shutdownNow();
-            if (LOG.isErrorEnabled()) {
-                LOG.error("[Dispatcher] Interrupted while awaiting termination", e);
-            }
+            logAwaitTerminationError(e);
+        }
+    }
+
+    private void logQueueFull(NotificationEvent event) {
+        if (LOG.isWarnEnabled()) {
+            LOG.warn("[Dispatcher] ⚠️ Queue full — dropped event: {} for {}", event.eventType(), event.recipient());
+        }
+    }
+
+    private void logDispatchInterrupted(NotificationEvent event, InterruptedException e) {
+        if (LOG.isErrorEnabled()) {
+            LOG.error("[Dispatcher] Interrupted while dispatching event: {} for {}", event.eventType(), event.recipient(), e);
+        }
+    }
+
+    private void logShutdownSignalError(InterruptedException e) {
+        if (LOG.isErrorEnabled()) {
+            LOG.error("[Dispatcher] Interrupted while sending shutdown signal to workers", e);
+        }
+    }
+
+    private void logAwaitTerminationError(InterruptedException e) {
+        if (LOG.isErrorEnabled()) {
+            LOG.error("[Dispatcher] Interrupted while awaiting termination", e);
+        }
+    }
+
+    private void logCleanShutdown() {
+        if (LOG.isInfoEnabled()) {
+            LOG.info("[Dispatcher] All workers stopped cleanly.");
+        }
+    }
+
+    private void logForcedShutdown() {
+        if (LOG.isWarnEnabled()) {
+            LOG.warn("[Dispatcher] Timeout — forcing shutdown.");
         }
     }
 
