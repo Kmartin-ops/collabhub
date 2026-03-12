@@ -17,15 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.util.List;
@@ -95,6 +87,16 @@ public class TaskController {
     public List<TaskResponse> getBoard(
             @Parameter(description = "Project ID", required = true) @RequestParam UUID projectId) {
         return taskService.findKanbanBoard(projectId).stream().map(taskMapper::toResponse).toList();
+    }
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Update task status")
+    public TaskResponse updateStatus(
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, String> body) {
+        var task = taskService.getById(id);
+        var actor = task.getAssignee() != null ? task.getAssignee() : userService.findAll().get(0);
+        taskService.changeStatus(task, body.get("status"), actor);
+        return taskMapper.toResponse(taskService.getById(id));
     }
 
 

@@ -32,7 +32,7 @@
             **/config/**,
             **/domain/**,
             **/exception/**,
-            **/controller/**,
+            **/contro   ller/**,
             **/report/**,
             **/security/**,
             **/*Application.java,
