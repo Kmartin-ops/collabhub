@@ -14,7 +14,6 @@ spring:
               - profile
             redirect-uri: "{baseUrl}/auth/oauth2/callback/{registrationId}"
 
-  # Database
   datasource:
     url: jdbc:postgresql://localhost:5432/collabhub
     username: collabhub
@@ -27,7 +26,6 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
 
-  # JPA / Hibernate
   jpa:
     hibernate:
       ddl-auto: validate
@@ -38,19 +36,16 @@ spring:
         format_sql: true
         default_schema: public
 
-  # Flyway
   flyway:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
 
-  # Jackson
   jackson:
     default-property-inclusion: non_null
     deserialization:
       fail-on-unknown-properties: false
 
-  # Default pagination settings
   data:
     web:
       pageable:
@@ -58,8 +53,18 @@ spring:
         max-page-size: 100
         one-indexed-parameters: false
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 server:
   port: 8080
+
+app:
+  upload:
+    dir: uploads
 
 collabhub:
   app-description: "Collaborative project management platform"
