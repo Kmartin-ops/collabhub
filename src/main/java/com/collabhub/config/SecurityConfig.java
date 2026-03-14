@@ -55,14 +55,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/auth/**",
-                                "/login/oauth2/**", // Google redirect URI
-                                "/oauth2/**",       // OAuth2 initiation
+                                "/login/oauth2/**",
+                                "/oauth2/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api-docs/**",
                                 "/actuator/health",
                                 "/health",
-                                "/info")
+                                "/info",
+                                "/ws/**")
                         .permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole(ROLE_MANAGER)
                         .requestMatchers(HttpMethod.DELETE, "/api/tasks/**").hasRole(ROLE_MANAGER)

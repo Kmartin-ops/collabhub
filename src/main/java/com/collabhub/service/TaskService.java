@@ -2,9 +2,11 @@ package com.collabhub.service;
 
 import com.collabhub.async.NotificationDispatcher;
 import com.collabhub.async.NotificationEvent;
+import com.collabhub.controller.NotificationController;
 import com.collabhub.domain.Project;
 import com.collabhub.domain.Task;
 import com.collabhub.domain.User;
+import com.collabhub.dto.NotificationPayload;
 import com.collabhub.exception.ResourceNotFoundException;
 import com.collabhub.notification.Notifiable;
 import com.collabhub.notification.StatusChangeHandler;
@@ -29,17 +31,20 @@ public class TaskService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
 
-    private final TaskRepository   taskRepository;
-    private final Notifiable       notifier;
-    private final ActivityService  activityService;
-    private NotificationDispatcher dispatcher;
+    private final TaskRepository         taskRepository;
+    private final Notifiable             notifier;
+    private final ActivityService        activityService;
+    private final NotificationController notificationController;
+    private NotificationDispatcher       dispatcher;
 
     public TaskService(TaskRepository taskRepository,
                        Notifiable notifier,
-                       ActivityService activityService) {
-        this.taskRepository  = taskRepository;
-        this.notifier        = notifier;
-        this.activityService = activityService;
+                       ActivityService activityService,
+                       NotificationController notificationController) {
+        this.taskRepository         = taskRepository;
+        this.notifier               = notifier;
+        this.activityService        = activityService;
+        this.notificationController = notificationController;
     }
 
     public void setDispatcher(NotificationDispatcher dispatcher) {
@@ -56,6 +61,14 @@ public class TaskService {
         activityService.log("TASK_CREATED", createdBy.getName(),
                 "TASK", saved.getId(), saved.getTitle(),
                 "Priority: " + priority, project);
+
+        notificationController.broadcastToProject(
+                project.getId().toString(),
+                NotificationPayload.of("TASK_CREATED",
+                        "New task created",
+                        createdBy.getName() + " created \"" + title + "\"",
+                        saved.getId().toString(),
+                        project.getId().toString()));
 
         dispatchOrNotify(
                 NotificationEvent.of(createdBy.getName(),
@@ -75,6 +88,15 @@ public class TaskService {
                 "TASK", task.getId(), task.getTitle(),
                 "Assigned to " + assignee.getName(), task.getProject());
 
+        // Private notification to the assignee
+        notificationController.sendToUser(
+                assignee.getEmail(),
+                NotificationPayload.of("TASK_ASSIGNED",
+                        "Task assigned to you",
+                        assignedBy.getName() + " assigned you \"" + task.getTitle() + "\"",
+                        task.getId().toString(),
+                        task.getProject().getId().toString()));
+
         dispatchOrNotify(NotificationEvent.of(assignee.getName(),
                 "You were assigned: '" + task.getTitle() + "'", "TASK_ASSIGNED"),
                 task, assignedBy, new TaskAssignedHandler(notifier));
@@ -90,6 +112,14 @@ public class TaskService {
         activityService.log("STATUS_CHANGED", changedBy.getName(),
                 "TASK", task.getId(), task.getTitle(),
                 oldStatus + " to " + newStatus, task.getProject());
+
+        notificationController.broadcastToProject(
+                task.getProject().getId().toString(),
+                NotificationPayload.of("STATUS_CHANGED",
+                        "Task status updated",
+                        changedBy.getName() + " moved \"" + task.getTitle() + "\" to " + newStatus,
+                        task.getId().toString(),
+                        task.getProject().getId().toString()));
 
         if ("DONE".equals(newStatus)) {
             dispatchOrNotify(NotificationEvent.of(changedBy.getName(),
