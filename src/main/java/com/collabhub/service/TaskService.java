@@ -29,13 +29,17 @@ public class TaskService {
 
     private static final Logger LOG = LoggerFactory.getLogger(TaskService.class);
 
-    private final TaskRepository taskRepository;
-    private final Notifiable notifier;
+    private final TaskRepository   taskRepository;
+    private final Notifiable       notifier;
+    private final ActivityService  activityService;
     private NotificationDispatcher dispatcher;
 
-    public TaskService(TaskRepository taskRepository, Notifiable notifier) {
-        this.taskRepository = taskRepository;
-        this.notifier = notifier;
+    public TaskService(TaskRepository taskRepository,
+                       Notifiable notifier,
+                       ActivityService activityService) {
+        this.taskRepository  = taskRepository;
+        this.notifier        = notifier;
+        this.activityService = activityService;
     }
 
     public void setDispatcher(NotificationDispatcher dispatcher) {
@@ -45,9 +49,14 @@ public class TaskService {
     @Transactional
     public Task createTask(String title, String priority, LocalDate dueDate, Project project, User createdBy) {
         LOG.debug("Creating task '{}' priority={} project={}", title, priority, project.getId());
-        Task task = new Task(title, priority, dueDate, project);
+        Task task  = new Task(title, priority, dueDate, project);
         Task saved = taskRepository.save(task);
         LOG.info("Task created: '{}' id={} project={}", title, saved.getId(), project.getId());
+
+        activityService.log("TASK_CREATED", createdBy.getName(),
+                "TASK", saved.getId(), saved.getTitle(),
+                "Priority: " + priority, project);
+
         dispatchOrNotify(
                 NotificationEvent.of(createdBy.getName(),
                         "Task '" + saved.getTitle() + "' created in " + project.getName(), "TASK_CREATED"),
@@ -61,8 +70,14 @@ public class TaskService {
         task.setAssignee(assignee);
         taskRepository.save(task);
         LOG.info("Task assigned: id={} assignee={} by={}", task.getId(), assignee.getEmail(), assignedBy.getEmail());
-        dispatchOrNotify(NotificationEvent.of(assignee.getName(), "You were assigned: '" + task.getTitle() + "'",
-                "TASK_ASSIGNED"), task, assignedBy, new TaskAssignedHandler(notifier));
+
+        activityService.log("TASK_ASSIGNED", assignedBy.getName(),
+                "TASK", task.getId(), task.getTitle(),
+                "Assigned to " + assignee.getName(), task.getProject());
+
+        dispatchOrNotify(NotificationEvent.of(assignee.getName(),
+                "You were assigned: '" + task.getTitle() + "'", "TASK_ASSIGNED"),
+                task, assignedBy, new TaskAssignedHandler(notifier));
     }
 
     @Transactional
@@ -70,13 +85,18 @@ public class TaskService {
         String oldStatus = task.getStatus();
         task.setStatus(newStatus);
         taskRepository.save(task);
-        LOG.info("Task status changed: '{}' {}→{} by={}", task.getTitle(), oldStatus, newStatus, changedBy.getEmail());
+        LOG.info("Task status changed: '{}' {}to{} by={}", task.getTitle(), oldStatus, newStatus, changedBy.getEmail());
+
+        activityService.log("STATUS_CHANGED", changedBy.getName(),
+                "TASK", task.getId(), task.getTitle(),
+                oldStatus + " to " + newStatus, task.getProject());
+
         if ("DONE".equals(newStatus)) {
-            dispatchOrNotify(NotificationEvent.of(changedBy.getName(), "🎉 '" + task.getTitle() + "' is DONE!",
-                    "TASK_COMPLETED"), task, changedBy, new TaskCompletedHandler(notifier));
+            dispatchOrNotify(NotificationEvent.of(changedBy.getName(),
+                    "Task '" + task.getTitle() + "' is DONE!", "TASK_COMPLETED"),
+                    task, changedBy, new TaskCompletedHandler(notifier));
         }
     }
-
 
     public Task getById(UUID id) {
         return taskRepository.findById(id).orElseThrow(() -> {
@@ -85,12 +105,9 @@ public class TaskService {
         });
     }
 
-    // ── Paginated + filtered search ───────────────────────────
     @Transactional(readOnly = true)
     public Page<Task> search(String status, String priority, UUID projectId, UUID assigneeId, String keyword,
             Pageable pageable) {
-        LOG.debug("Searching tasks: status={} priority={} projectId={} keyword={}", status, priority, projectId,
-                keyword);
         var spec = TaskSpecification.withFilters(status, priority, projectId, assigneeId, keyword);
         return taskRepository.findAll(spec, pageable);
     }
@@ -120,19 +137,19 @@ public class TaskService {
         return taskRepository.findAll();
     }
 
-    private void dispatchOrNotify(NotificationEvent event, Task task, User actor, StatusChangeHandler handler) {
-        if (dispatcher != null) {
-            dispatcher.dispatch(event);
-        } else {
-            handler.handle(task, actor);
-        }
-    }
-
     @Transactional
     public void deleteTask(UUID id) {
         LOG.debug("Deleting task id={}", id);
         Task task = getById(id);
         taskRepository.delete(task);
         LOG.info("Task deleted: id={}", id);
+    }
+
+    private void dispatchOrNotify(NotificationEvent event, Task task, User actor, StatusChangeHandler handler) {
+        if (dispatcher != null) {
+            dispatcher.dispatch(event);
+        } else {
+            handler.handle(task, actor);
+        }
     }
 }
