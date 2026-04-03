@@ -5,4 +5,9 @@
     <Match>
         <Bug category="MALICIOUS_CODE"/>
     </Match>
+    <!-- LocalStorageService constructor creates directories -->
+    <Match>
+        <Class name="com.collabhub.service.LocalStorageService"/>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
 </FindBugsFilter>

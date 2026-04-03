@@ -11,4 +11,5 @@ public record AttachmentResponse(
         String uploadedBy,
         LocalDateTime uploadedAt,
         String downloadUrl
-) {}
+) {
+}

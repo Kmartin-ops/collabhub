@@ -1,6 +1,14 @@
 package com.collabhub.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,7 +39,8 @@ public class Activity {
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    public Activity() {}
+    public Activity() {
+    }
 
     public Activity(String action, String actorName, String entityType,
                     UUID entityId, String entityName, String detail, Project project) {
@@ -44,13 +53,39 @@ public class Activity {
         this.project    = project;
     }
 
-    public UUID          getId()         { return id; }
-    public String        getAction()     { return action; }
-    public String        getActorName()  { return actorName; }
-    public String        getEntityType() { return entityType; }
-    public UUID          getEntityId()   { return entityId; }
-    public String        getEntityName() { return entityName; }
-    public String        getDetail()     { return detail; }
-    public Project       getProject()    { return project; }
-    public LocalDateTime getCreatedAt()  { return createdAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getAction() {
+        return action;
+    }
+
+    public String getActorName() {
+        return actorName;
+    }
+
+    public String getEntityType() {
+        return entityType;
+    }
+
+    public UUID getEntityId() {
+        return entityId;
+    }
+
+    public String getEntityName() {
+        return entityName;
+    }
+
+    public String getDetail() {
+        return detail;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

@@ -1,6 +1,14 @@
 package com.collabhub.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -34,7 +42,8 @@ public class Attachment {
     @Column(nullable = false)
     private LocalDateTime uploadedAt = LocalDateTime.now();
 
-    public Attachment() {}
+    public Attachment() {
+    }
 
     public Attachment(String originalFileName, String storedFileName, String contentType,
                       long fileSize, Task task, User uploadedBy) {
@@ -46,12 +55,35 @@ public class Attachment {
         this.uploadedBy       = uploadedBy;
     }
 
-    public UUID getId()                  { return id; }
-    public String getOriginalFileName()  { return originalFileName; }
-    public String getStoredFileName()    { return storedFileName; }
-    public String getContentType()       { return contentType; }
-    public long getFileSize()            { return fileSize; }
-    public Task getTask()                { return task; }
-    public User getUploadedBy()          { return uploadedBy; }
-    public LocalDateTime getUploadedAt() { return uploadedAt; }
+    public UUID getId() {
+        return id;
+    }
+
+    public String getOriginalFileName() {
+        return originalFileName;
+    }
+
+    public String getStoredFileName() {
+        return storedFileName;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public long getFileSize() {
+        return fileSize;
+    }
+
+    public Task getTask() {
+        return task;
+    }
+
+    public User getUploadedBy() {
+        return uploadedBy;
+    }
+
+    public LocalDateTime getUploadedAt() {
+        return uploadedAt;
+    }
 }

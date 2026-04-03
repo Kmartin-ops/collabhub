@@ -12,4 +12,5 @@ public record ActivityResponse(
         String entityName,
         String detail,
         LocalDateTime createdAt
-) {}
+) {
+}
